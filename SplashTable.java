@@ -9,13 +9,15 @@ public class SplashTable{
 
 	//class members
 	private int bucketSize;
+	private int numBuckets;
 	private int maxReinsertions;
 	private int tableSize;
 	private int numMultipliers;
+	private String inputFile;
 	private String dumpFile;
 	private String probeFile;
 	private String resultFile;
-	private ArrayList<Integer> hashMultipliers;
+	private int[] hashMultipliers;
 	private ArrayList<ArrayList<Integer>> bucketKeys;
 	private ArrayList<ArrayList<Integer>> bucketPayloads;
 
@@ -25,14 +27,14 @@ public class SplashTable{
 	
 		// Take in arguments assign them to class members
 		SplashTable s = new SplashTable();
-		s.setBucketSize(Integer.parseInt(args[0]);
-		s.setMaxReinsertions(Integer.parseInt(args[1]);
+		s.setBucketSize(Integer.parseInt(args[0]));
+		s.setMaxReinsertions(Integer.parseInt(args[1]));
 		s.setTableSize((int) Math.pow(2, Integer.parseInt(args[2])));
 		s.setNumMultipliers(Integer.parseInt(args[3]));
 		s.setInputFile(args[4]);
 		s.bucketKeys = new ArrayList<ArrayList<Integer>>();
 		s.bucketPayloads = new ArrayList<ArrayList<Integer>>();
-		
+		s.setNumBuckets();
 /*		if(args.length == 7){
 			String probeFile = args[5];
 			String resultFile = args[6];
@@ -49,7 +51,7 @@ public class SplashTable{
 		
 		try{
 			// Open file that is the first command line parameter
-			FileInputStream fstream = new FileInputStream(inputFile);
+			FileInputStream fstream = new FileInputStream(s.getInputFile());
 			DataInputStream in = new DataInputStream(fstream);
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			String strLine;
@@ -64,7 +66,7 @@ public class SplashTable{
 		}
 		
 		// Get numMultipliers hash multipliers
-		s.setHashMultipliers(numMultipliers);
+		s.setHashMultipliers(s.getNumMultipliers());
 		
 		// Pass variables into build methods
 		// key and payloads values 
@@ -77,7 +79,7 @@ public class SplashTable{
 	 */
 	private void setHashMultipliers(int numMultipliers){
 		 
-		hashMultipliers = new ArrayList<Integer>();
+		hashMultipliers = new int[numMultipliers];
 		// change to 0 if necessary
 		int min = 1;
 		int max = (int) Math.pow(2, 32);
@@ -90,7 +92,7 @@ public class SplashTable{
 						break;
 					}
 				}
-				hashMultipliers.add(randNum);
+				hashMultipliers[i] = randNum;
 				uniqueRandom = true;
 			}			
 			uniqueRandom = false;
@@ -103,15 +105,13 @@ public class SplashTable{
 		{
 			//TODO: check to make sure value doesn't already exist in bucket
 						
-			int[] possibleBuckets = generatePossibleBuckets(keys[i], hashMultipliers);
+			int[] possibleBuckets = generatePossibleBuckets(keys[i]);
 			int successfulInsert = insert(keys[i],payloads[i], possibleBuckets,0,-1);
 			if (successfulInsert == 0)
 			{
 				//TODO: deal with failed build
 				return 0;
-			}
-				
-			
+			}			
 		}
 		
 		//if cannot be built, return 0
@@ -151,7 +151,7 @@ public class SplashTable{
 		bucketKeys.get(randomBucket).add(key);
 		bucketPayloads.get(randomBucket).add(val);
 		//System.out.println("Removed key " + newKey + " and value " + newVal + " from bucket " + randomBucket + " to put in key " + key);
-		int[] newPossibleBuckets = generatePossibleBuckets(newKey, hashMultipliers);
+		int[] newPossibleBuckets = generatePossibleBuckets(newKey);
 		return insert(newKey, newVal, newPossibleBuckets,attemptedReinsertions+1,randomBucket);
 		
 	}
@@ -179,19 +179,36 @@ public class SplashTable{
 		
 		return possibleBuckets;
 	}
-
 	
 	// remaining get and set methods follow
+		
 	private void setBucketSize(int bucketSize){
 		this.bucketSize = bucketSize;
 	}
 	
+	private int getBucketSize(){
+		return bucketSize;
+	}
+	
 	private void setTableSize(int tableSize){
-		this.TableSize = tableSize;
+		this.tableSize = tableSize;
+	}
+	
+	private int getTableSize(){
+		return tableSize;
+	}	
+	
+	private void setNumBuckets(){
+		assert(tableSize % bucketSize == 0);
+		this.numBuckets = (int)(tableSize/bucketSize);
 	}
 	
 	private void setNumMultipliers(int numMultipliers){
 		this.numMultipliers = numMultipliers;
+	}
+	
+	private int getNumMultipliers(){
+		return numMultipliers;
 	}
 	
 	private void setMaxReinsertions(int maxReinsertions){
@@ -200,6 +217,10 @@ public class SplashTable{
 	
 	private void setInputFile(String inputFile){
 		this.inputFile = inputFile;
+	}
+		
+	private String getInputFile(){
+		return inputFile;
 	}
 	
 }
