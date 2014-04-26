@@ -35,15 +35,15 @@ public class SplashTable{
 		s.bucketKeys = new ArrayList<ArrayList<Integer>>();
 		s.bucketPayloads = new ArrayList<ArrayList<Integer>>();
 		s.setNumBuckets();
-/*		if(args.length == 7){
-			String probeFile = args[5];
-			String resultFile = args[6];
+		if(args.length == 7){
+			s.setProbeFile(args[5]);
+			s.setResultFile(args[6]);
 		}
 		else{
-			String dumpFile = args[5];
-			String probeFile = args[6];
-			String resultFile = args[7];
-		}*/
+			s.setDumpFile(args[5]);
+			s.setProbeFile(args[6]);
+			s.setResultFile(args[7]);
+		}
 
 		// Read input file, create lsit of keys and payloads
 		ArrayList<Integer> inputKeys = new ArrayList<Integer>();
@@ -72,6 +72,35 @@ public class SplashTable{
 		// key and payloads values 
 		// UNCOMMENT THIS TO PASS TO BUILD METHOD
 		// Build(inputKeys, inputPayloads);
+		System.out.println(inputKeys);
+		System.out.println(inputPayloads);
+		s.build(inputKeys, inputPayloads);
+		// Once table has successfully been built
+		// set up array of all probes 
+		ArrayList<Integer> probeKeys = new ArrayList<Integer>();
+		try{
+			// Open file that is the first command line parameter
+			FileInputStream fstream = new FileInputStream(s.getProbeFile());
+			DataInputStream in = new DataInputStream(fstream);
+			BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			String strLine;
+			while ((strLine = br.readLine()) != null) {
+				probeKeys.add(Integer.parseInt(strLine));
+			}
+			in.close();
+		}
+		catch (Exception e){
+			System.err.println("Error: " + e.getMessage());
+		}
+		
+		// then probe table
+		// write key and payload to dumpfile
+		for(int pKey: probeKeys){
+			int payload = 0;
+			if((payload = s.probe(pKey)) != 0){
+				s.writeResult(s.getResultFile(), pKey, payload);
+			}
+		}
 	}
 	
 	/*
@@ -99,14 +128,38 @@ public class SplashTable{
 		}
 	}
 	
-	private int build(int[] keys, int[] payloads){
+//	private int build(int[] keys, int[] payloads){
+//		
+//		for (int i = 0; i < keys.length; i++)
+//		{
+//			//TODO: check to make sure value doesn't already exist in bucket
+//						
+//			int[] possibleBuckets = generatePossibleBuckets(keys[i]);
+//			int successfulInsert = insert(keys[i],payloads[i], possibleBuckets,0,-1);
+//			if (successfulInsert == 0)
+//			{
+//				//TODO: deal with failed build
+//				return 0;
+//			}			
+//		}
+//		
+//		//if cannot be built, return 0
+//		return 1;
+//	}
+	
+	/*
+	 * Needed to rewrite a little because I won't know size to have arrays
+	 * need arraylist
+	 */
+	private int build(ArrayList<Integer> keys, ArrayList<Integer> payloads){
 		
-		for (int i = 0; i < keys.length; i++)
+		for (int i = 0; i < keys.size(); i++)
 		{
 			//TODO: check to make sure value doesn't already exist in bucket
 						
-			int[] possibleBuckets = generatePossibleBuckets(keys[i]);
-			int successfulInsert = insert(keys[i],payloads[i], possibleBuckets,0,-1);
+			int[] possibleBuckets = generatePossibleBuckets(keys.get(i));
+			System.out.println("In here" + possibleBuckets.toString());
+			int successfulInsert = insert(keys.get(i), payloads.get(i), possibleBuckets,0,-1);
 			if (successfulInsert == 0)
 			{
 				//TODO: deal with failed build
@@ -161,6 +214,7 @@ public class SplashTable{
 	 */
 	private int[] generatePossibleBuckets(int key)
 	{
+		
 		int[] possibleBuckets = new int[hashMultipliers.length];
 		
 		for (int j = 0; j < hashMultipliers.length; j++)
@@ -176,8 +230,48 @@ public class SplashTable{
 			//		" (in long form: " + h + "): " + possibleBucket);
 			possibleBuckets[j] = possibleBucket;
 		}
-		
+		System.out.println("COOL" + possibleBuckets[0]);
 		return possibleBuckets;
+	}
+	/*
+	 * Probe table , get mask , apply mask to every payload and or them together
+	 */
+//	private int probe(int key){
+//		int[] hashBuckets = generatePossibleBuckets(key);
+//		int payload = 0;
+//		for(int i=0; i<hashMultipliers.length; i++){
+//			for(int j=0; j< bucketSize; j++){
+//				int mask = (bucketKeys.get(hashBuckets[i]).get(j)==key) ?  1 : 0;
+//				// apply mask to each of the payloads and OR all together
+//				// not sure if this is necessary
+//				payload += payload + mask * bucketPayloads.get(hashBuckets[i]).get(j);
+//			}
+//		}
+//		return payload;
+//	}
+	
+	/*
+	 * Probe table , get mask , apply mask to every payload and or them together
+	 */
+	private int probe(int key){
+		int[] hashBuckets = generatePossibleBuckets(key);
+		int payload = 0;
+		for(int i=0; i<hashMultipliers.length; i++){
+			for(int j=0; j< bucketSize; j++){
+				payload = (bucketKeys.get(hashBuckets[i]).get(j)==key) ?  bucketPayloads.get(hashBuckets[i]).get(j) : payload;
+			}
+		}
+		return payload;
+	}
+	
+	private void dump(String outputFile, int key, int payLoad){
+		//Write state of table
+		
+	}
+	
+	private void writeResult(String outputFile, int key, int payLoad){
+		//Write state of table
+		
 	}
 	
 	// remaining get and set methods follow
@@ -221,6 +315,30 @@ public class SplashTable{
 		
 	private String getInputFile(){
 		return inputFile;
+	}
+	
+	private void setResultFile(String resultFile){
+		this.resultFile = inputFile;
+	}
+	
+	private String getResultFile(){
+		return resultFile;
+	}
+	
+	private void setProbeFile(String ProbeFile){
+		this.probeFile = probeFile;
+	}
+	
+	private String getProbeFile(){
+		return probeFile;
+	}
+	
+	private void setDumpFile(String dumpFile){
+		this.dumpFile = dumpFile;
+	}
+	
+	private String getDumpFile(){
+		return dumpFile;
 	}
 	
 }
