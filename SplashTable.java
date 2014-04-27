@@ -275,33 +275,33 @@ public class SplashTable{
 	/*
 	 * Probe table , get mask , apply mask to every payload and or them together
 	 */
-//	private int probe(int key){
-//		int[] hashBuckets = generatePossibleBuckets(key);
-//		int payload = 0;
-//		for(int i=0; i<hashMultipliers.length; i++){
-//			for(int j=0; j< bucketSize; j++){
-//				int mask = (bucketKeys.get(hashBuckets[i]).get(j)==key) ?  1 : 0;
-//				// apply mask to each of the payloads and OR all together
-//				// not sure if this is necessary
-//				payload += payload + mask * bucketPayloads.get(hashBuckets[i]).get(j);
-//			}
-//		}
-//		return payload;
-//	}
-	
-	/*
-	 * Probe table , get mask , apply mask to every payload and or them together
-	 */
 	private int probe(int key){
 		int[] hashBuckets = generatePossibleBuckets(key);
 		int payload = 0;
 		for(int i=0; i<hashMultipliers.length; i++){
 			for(int j=0; j< bucketSize; j++){
-				payload = (bucketKeys.get(hashBuckets[i]).get(j)==key) ?  bucketPayloads.get(hashBuckets[i]).get(j) : payload;
+				int mask = (bucketKeys.get(hashBuckets[i]).get(j)==key) ?  1 : 0;
+				// apply mask to each of the payloads and OR all together
+				// not sure if this is necessary
+				payload |= mask * bucketPayloads.get(hashBuckets[i]).get(j);
 			}
 		}
 		return payload;
 	}
+	
+	/*
+	 * Probe table , get mask , apply mask to every payload and or them together
+	 */
+//	private int probe(int key){
+//		int[] hashBuckets = generatePossibleBuckets(key);
+//		int payload = 0;
+//		for(int i=0; i<hashMultipliers.length; i++){
+//			for(int j=0; j< bucketSize; j++){
+//				payload = (bucketKeys.get(hashBuckets[i]).get(j)==key) ?  bucketPayloads.get(hashBuckets[i]).get(j) : payload;
+//			}
+//		}
+//		return payload;
+//	}
 	
 	private void dump(String outputFile, int key, int payLoad){
 		//Write state of table
