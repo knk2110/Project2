@@ -47,6 +47,7 @@ public class SplashTable{
 			s.setProbeFile(args[6]);
 			s.setResultFile(args[7]);
 		}
+		System.out.println(args[5]);
 
 		// Read input file, create list of keys and payloads
 		ArrayList<Integer> inputKeys = new ArrayList<Integer>();
@@ -82,7 +83,34 @@ public class SplashTable{
 		}
 		
 		//will put stuff for probe here
-		
+		// Once table has successfully been built
+				// set up array of all probes 
+		ArrayList<Integer> probeKeys = new ArrayList<Integer>();
+				try{
+					// Open file that is the first command line parameter
+					FileInputStream fstream = new FileInputStream(s.getProbeFile());
+					DataInputStream in = new DataInputStream(fstream);
+					BufferedReader br = new BufferedReader(new InputStreamReader(in));
+					String strLine;
+					while ((strLine = br.readLine()) != null) {
+						probeKeys.add(Integer.parseInt(strLine));
+					}
+					in.close();
+				}
+				catch (Exception e){
+					System.err.println("Error: " + e.getMessage());
+				}
+				// then probe table
+				// clear file
+				s.clearFile(s.getResultFile());
+				// write key and payload to dumpfile
+				for(int pKey: probeKeys){
+					int payload = 0;
+					if((payload = s.probe(pKey)) != 0){
+						s.writeResult(s.getResultFile(), pKey, payload);
+					}
+				}
+
 		//if dumpFile present, output to dumpfile
 		if (!s.getDumpFile().equals("")){
 			//call dump to get results of dumpfile, then print them out to dumpfile
@@ -280,9 +308,30 @@ public class SplashTable{
 		
 	}
 	
+	private void clearFile(String outputFile){
+		File resultFile = new File(outputFile); 
+		resultFile.delete(); 
+		File newResultFile = new File(outputFile); 
+		try {
+			newResultFile.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	}
+	
 	private void writeResult(String outputFile, int key, int payLoad){
 		//Write state of table
-		
+		try{
+			  // Create file 
+			  FileWriter fstream = new FileWriter(outputFile,true);
+			  BufferedWriter out = new BufferedWriter(fstream);
+			  out.write(key + " " + payLoad + "\n");
+			  //Close the output stream
+			  out.close();
+			  }catch (Exception e){//Catch exception if any
+			  System.err.println("Error: " + e.getMessage());
+	   }
 	}
 	
 	/**
@@ -387,14 +436,14 @@ public class SplashTable{
 	}
 	
 	private void setResultFile(String resultFile){
-		this.resultFile = inputFile;
+		this.resultFile = resultFile;
 	}
 	
 	private String getResultFile(){
 		return resultFile;
 	}
 	
-	private void setProbeFile(String ProbeFile){
+	private void setProbeFile(String probeFile){
 		this.probeFile = probeFile;
 	}
 	
