@@ -84,8 +84,9 @@ public class SplashTable{
 		// Build(inputKeys, inputPayloads);
 	}
 	
-	/*
-	 * Create hash multipliers -- odd numbers in the range [0, 2^32)
+	/**
+	 * Create hash multipliers - odd numbers in the range [0, 2^32]
+	 * @param numMultipliers - the number of hash multipliers to generate
 	 */
 	private void setHashMultipliers(int numMultipliers){
 		 
@@ -109,6 +110,12 @@ public class SplashTable{
 		}
 	}
 	
+	/**
+	 * Build the splash table
+	 * @param keys - keys to enter into the splash table
+	 * @param payloads - payloads to enter into the splash table
+	 * @return 1 for successful build; 0 for failed build
+	 */
 	private int build(ArrayList<Integer> keys, ArrayList<Integer> payloads){
 		
 		for (int i = 0; i < keys.size(); i++)
@@ -128,15 +135,24 @@ public class SplashTable{
 		return 1;
 	}
 	
-	/*
-	 * Attempt to insert the parameters key and val into the splash table. 
-	 * Return 1 for successful insertion; return 0 if unsuccessful (i.e. exceeded maximum number of reinsertions)
+	/**
+	 * Attempt to insert a key-value pair into the splash table
+	 * @param key - the key to insert
+	 * @param val - the value/payload to insert
+	 * @param possibleBuckets - the buckets to which key may hash
+	 * @param attemptedReinsertions - number of reinsertions that have been attempted thus far
+	 * @param oldBucketIndex - the previous bucket that this value was in (set to -1 if inserting this pair for the first time)
+	 * @return 1 for successful insertion; 0 otherwise
 	 */
 	private int insert(int key, int val, int[] possibleBuckets, int attemptedReinsertions, int oldBucketIndex){
 		
-		if(attemptedReinsertions > maxReinsertions)
+		if(attemptedReinsertions > maxReinsertions){
+			System.out.println("was unable to insert key " + key + " and value " + val + ": exceeded maximum reinsertions (" + attemptedReinsertions + ")");
 			return 0;
-		
+			
+		}
+			
+			
 		// attempt to insert key and val into bucket that is not full
 		for (int i = 0; i < possibleBuckets.length; i++)
 		{
@@ -160,14 +176,16 @@ public class SplashTable{
 		assert(bucketKeys.get(randomBucket).size() > 0);
 		bucketKeys.get(randomBucket).add(key);
 		bucketPayloads.get(randomBucket).add(val);
-		System.out.println("Removed key " + newKey + " and value " + newVal + " from bucket " + randomBucket + " to put in key " + key);
+		//System.out.println("Removed key " + newKey + " and value " + newVal + " from bucket " + randomBucket + " to put in key " + key);
 		int[] newPossibleBuckets = generatePossibleBuckets(newKey);
 		return insert(newKey, newVal, newPossibleBuckets,attemptedReinsertions+1,randomBucket);
 		
 	}
 	
-	/*
-	 * Generate the possible buckets for a key based on the hash multipliers
+	/**
+	 * Generate the possible buckets for the given key based on the hash multipliers
+	 * @param key - the key for which to obtain the possible buckets
+	 * @return a list of possible buckets for that key
 	 */
 	private int[] generatePossibleBuckets(int key)
 	{
@@ -181,15 +199,22 @@ public class SplashTable{
 			String hkStr = Long.toBinaryString(hk);
 			int num = (int)(Math.log(numBuckets)/Math.log(2));
 			int possibleBucket = (int)(hk >> (hkStr.length()-(num-(32-hkStr.length()))));
-		
-			System.out.println("Possible bucket for key " + key + " and multiplier " + hashMultipliers[j] + 
-					" (in long form: " + h + "): " + possibleBucket);
 			possibleBuckets[j] = possibleBucket;
 		}
+		
+		/*output for debugging
+		System.out.print("Possible buckets for key " + key + ":");
+		for (int i = 0; i < possibleBuckets.length; i++){
+			System.out.print(" h = " + hashMultipliers[i] + ", bucket = " + possibleBuckets[i] + ";");
+		}
+		System.out.println();*/
 		
 		return possibleBuckets;
 	}
 	
+	/**
+	 * Print the entire splash table
+	 */
 	private void printSplashTable(){
 		System.out.println("Bucket\tSlots");
 		for (int i = 0; i < bucketKeys.size(); i++){
