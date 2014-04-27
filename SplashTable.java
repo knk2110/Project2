@@ -84,27 +84,30 @@ public class SplashTable{
 		
 		//will put stuff for probe here
 		
-		//call dump to get results of dumpfile, then print them out to dumpfile
-		ArrayList<String> dumpResults = s.dump();
-		
-		try{
-			File file = new File(dumpFile);
-			if (!file.exists()){
-				file.createNewFile();
-			}
-			FileWriter fw = new FileWriter(file);
-			BufferedWriter bw = new BufferedWriter(fw);
-			for (int i = 0; i < dumpResults.size(); i++){
-				bw.write(dumpResults.get(i));
-				if (i < dumpResults.size()-1){
-					bw.newLine();
-				}
-			}
-			bw.close();
+		//if dumpFile present, output to dumpfile
+		if (!dumpFile.equals("")){
+			//call dump to get results of dumpfile, then print them out to dumpfile
+			ArrayList<String> dumpResults = s.dump();
 			
-		}
-		catch (Exception e){
-			System.out.println("Could not write dumpfile: " + e.getMessage());
+			try{
+				File file = new File(dumpFile);
+				if (!file.exists()){
+					file.createNewFile();
+				}
+				FileWriter fw = new FileWriter(file);
+				BufferedWriter bw = new BufferedWriter(fw);
+				for (int i = 0; i < dumpResults.size(); i++){
+					bw.write(dumpResults.get(i));
+					if (i < dumpResults.size()-1){
+						bw.newLine();
+					}
+				}
+				bw.close();
+				
+			}
+			catch (Exception e){
+				System.out.println("Could not write dumpfile: " + e.getMessage());
+			}
 		}
 	}
 	
