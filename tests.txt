@@ -1,0 +1,17 @@
+test case #1 (for BUILD):
+B = 2
+R = 4
+S = 3
+h = 2
+
+input file:
+1 2
+200 458934
+357 1239
+44 12
+5563 54
+60434 123
+7 73857392
+82334 234
+
+may pass, may fail, if passes, should create table with 4 buckets, each of which has 2 slots, and every slot should be full.
