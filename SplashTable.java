@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.ArrayList;
+import java.util.StringTokenizer;
 
 public class SplashTable{
 
@@ -9,6 +10,10 @@ public class SplashTable{
 	private int maxReinsertions;
 	private int tableSize;
 	private int numMultipliers;
+	private String inputFile = "";
+	private String dumpFile = "";
+	private String probeFile = "";
+	private String resultFile = "";
 	private int[] hashMultipliers;
 	private int N; //number of successfully inserted key/payload pairs
 	private ArrayList<ArrayList<Integer>> bucketKeys;
@@ -29,25 +34,20 @@ public class SplashTable{
 		s.setMaxReinsertions(Integer.parseInt(args[1]));
 		s.setTableSize((int) Math.pow(2, Integer.parseInt(args[2])));
 		s.setNumMultipliers(Integer.parseInt(args[3]));
-		String inputFile = args[4];
-		s.setN(0);
+		s.setInputFile(args[4]);
 		s.bucketKeys = new ArrayList<ArrayList<Integer>>();
 		s.bucketPayloads = new ArrayList<ArrayList<Integer>>();
 		s.setNumBuckets();
-		
-		String probeFile = "";
-		String dumpFile = "";
-		String resultFile = "";
-		
 		if(args.length == 7){
-			probeFile = args[5];
-			resultFile = args[6];
+			s.setProbeFile(args[5]);
+			s.setResultFile(args[6]);
 		}
 		else{
-			dumpFile = args[5];
-			probeFile = args[6];
-			resultFile = args[7];
+			s.setDumpFile(args[5]);
+			s.setProbeFile(args[6]);
+			s.setResultFile(args[7]);
 		}
+		System.out.println(args[5]);
 
 		// Read input file, create list of keys and payloads
 		ArrayList<Integer> inputKeys = new ArrayList<Integer>();
@@ -55,7 +55,7 @@ public class SplashTable{
 		
 		try{
 			// Open file that is the first command line parameter
-			FileInputStream fstream = new FileInputStream(inputFile);
+			FileInputStream fstream = new FileInputStream(s.getInputFile());
 			DataInputStream in = new DataInputStream(fstream);
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			String strLine;
@@ -83,14 +83,41 @@ public class SplashTable{
 		}
 		
 		//will put stuff for probe here
-		
+		// Once table has successfully been built
+				// set up array of all probes 
+		ArrayList<Integer> probeKeys = new ArrayList<Integer>();
+				try{
+					// Open file that is the first command line parameter
+					FileInputStream fstream = new FileInputStream(s.getProbeFile());
+					DataInputStream in = new DataInputStream(fstream);
+					BufferedReader br = new BufferedReader(new InputStreamReader(in));
+					String strLine;
+					while ((strLine = br.readLine()) != null) {
+						probeKeys.add(Integer.parseInt(strLine));
+					}
+					in.close();
+				}
+				catch (Exception e){
+					System.err.println("Error: " + e.getMessage());
+				}
+				// then probe table
+				// clear file
+				s.clearFile(s.getResultFile());
+				// write key and payload to dumpfile
+				for(int pKey: probeKeys){
+					int payload = 0;
+					if((payload = s.probe(pKey)) != 0){
+						s.writeResult(s.getResultFile(), pKey, payload);
+					}
+				}
+
 		//if dumpFile present, output to dumpfile
-		if (!dumpFile.equals("")){
+		if (!s.getDumpFile().equals("")){
 			//call dump to get results of dumpfile, then print them out to dumpfile
 			ArrayList<String> dumpResults = s.dump();
 			
 			try{
-				File file = new File(dumpFile);
+				File file = new File(s.getDumpFile());
 				if (!file.exists()){
 					file.createNewFile();
 				}
@@ -245,6 +272,67 @@ public class SplashTable{
 		
 		return possibleBuckets;
 	}
+	/*
+	 * Probe table , get mask , apply mask to every payload and or them together
+	 */
+//	private int probe(int key){
+//		int[] hashBuckets = generatePossibleBuckets(key);
+//		int payload = 0;
+//		for(int i=0; i<hashMultipliers.length; i++){
+//			for(int j=0; j< bucketSize; j++){
+//				int mask = (bucketKeys.get(hashBuckets[i]).get(j)==key) ?  1 : 0;
+//				// apply mask to each of the payloads and OR all together
+//				// not sure if this is necessary
+//				payload += payload + mask * bucketPayloads.get(hashBuckets[i]).get(j);
+//			}
+//		}
+//		return payload;
+//	}
+	
+	/*
+	 * Probe table , get mask , apply mask to every payload and or them together
+	 */
+	private int probe(int key){
+		int[] hashBuckets = generatePossibleBuckets(key);
+		int payload = 0;
+		for(int i=0; i<hashMultipliers.length; i++){
+			for(int j=0; j< bucketSize; j++){
+				payload = (bucketKeys.get(hashBuckets[i]).get(j)==key) ?  bucketPayloads.get(hashBuckets[i]).get(j) : payload;
+			}
+		}
+		return payload;
+	}
+	
+	private void dump(String outputFile, int key, int payLoad){
+		//Write state of table
+		
+	}
+	
+	private void clearFile(String outputFile){
+		File resultFile = new File(outputFile); 
+		resultFile.delete(); 
+		File newResultFile = new File(outputFile); 
+		try {
+			newResultFile.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	}
+	
+	private void writeResult(String outputFile, int key, int payLoad){
+		//Write state of table
+		try{
+			  // Create file 
+			  FileWriter fstream = new FileWriter(outputFile,true);
+			  BufferedWriter out = new BufferedWriter(fstream);
+			  out.write(key + " " + payLoad + "\n");
+			  //Close the output stream
+			  out.close();
+			  }catch (Exception e){//Catch exception if any
+			  System.err.println("Error: " + e.getMessage());
+	   }
+	}
 	
 	/**
 	 * Generate a list of all lines in the dump file.
@@ -338,6 +426,37 @@ public class SplashTable{
 	
 	private void setN(int N){
 		this.N = N;
+	}
+	private void setInputFile(String inputFile){
+		this.inputFile = inputFile;
+	}
+		
+	private String getInputFile(){
+		return inputFile;
+	}
+	
+	private void setResultFile(String resultFile){
+		this.resultFile = resultFile;
+	}
+	
+	private String getResultFile(){
+		return resultFile;
+	}
+	
+	private void setProbeFile(String probeFile){
+		this.probeFile = probeFile;
+	}
+	
+	private String getProbeFile(){
+		return probeFile;
+	}
+	
+	private void setDumpFile(String dumpFile){
+		this.dumpFile = dumpFile;
+	}
+	
+	private String getDumpFile(){
+		return dumpFile;
 	}
 	
 }
