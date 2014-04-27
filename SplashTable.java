@@ -10,10 +10,10 @@ public class SplashTable{
 	private int maxReinsertions;
 	private int tableSize;
 	private int numMultipliers;
-	private String inputFile;
-	private String dumpFile;
-	private String probeFile;
-	private String resultFile;
+	private String inputFile = "";
+	private String dumpFile = "";
+	private String probeFile = "";
+	private String resultFile = "";
 	private int[] hashMultipliers;
 	private int N; //number of successfully inserted key/payload pairs
 	private ArrayList<ArrayList<Integer>> bucketKeys;
@@ -84,12 +84,12 @@ public class SplashTable{
 		//will put stuff for probe here
 		
 		//if dumpFile present, output to dumpfile
-		if (!dumpFile.equals("")){
+		if (!s.getDumpFile().equals("")){
 			//call dump to get results of dumpfile, then print them out to dumpfile
 			ArrayList<String> dumpResults = s.dump();
 			
 			try{
-				File file = new File(dumpFile);
+				File file = new File(s.getDumpFile());
 				if (!file.exists()){
 					file.createNewFile();
 				}
@@ -377,6 +377,7 @@ public class SplashTable{
 	
 	private void setN(int N){
 		this.N = N;
+	}
 	private void setInputFile(String inputFile){
 		this.inputFile = inputFile;
 	}
