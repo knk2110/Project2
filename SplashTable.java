@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
@@ -18,11 +15,17 @@ public class SplashTable{
 	private String probeFile;
 	private String resultFile;
 	private int[] hashMultipliers;
+	private int N; //number of successfully inserted key/payload pairs
 	private ArrayList<ArrayList<Integer>> bucketKeys;
 	private ArrayList<ArrayList<Integer>> bucketPayloads;
 
 	
 	
+	/**
+	 * Main creates an instance of the SplashTable object and handles all I/O.
+	 * Main also calls the build, probe, and dump methods.
+	 * @param args
+	 */
 	public static void main(String args[]){
 	
 		// Take in arguments assign them to class members
@@ -45,7 +48,7 @@ public class SplashTable{
 			s.setResultFile(args[7]);
 		}
 
-		// Read input file, create lsit of keys and payloads
+		// Read input file, create list of keys and payloads
 		ArrayList<Integer> inputKeys = new ArrayList<Integer>();
 		ArrayList<Integer> inputPayloads = new ArrayList<Integer>();
 		
@@ -62,49 +65,54 @@ public class SplashTable{
 			in.close();
 		}
 		catch (Exception e){
-			System.err.println("Error: " + e.getMessage());
+			System.err.println("Could not read input file: " + e.getMessage());
 		}
 		
 		// Get numMultipliers hash multipliers
 		s.setHashMultipliers(s.getNumMultipliers());
 		
-		// Pass variables into build methods
-		// key and payloads values 
-		// UNCOMMENT THIS TO PASS TO BUILD METHOD
-		// Build(inputKeys, inputPayloads);
-		System.out.println(inputKeys);
-		System.out.println(inputPayloads);
-		s.build(inputKeys, inputPayloads);
-		// Once table has successfully been built
-		// set up array of all probes 
-		ArrayList<Integer> probeKeys = new ArrayList<Integer>();
-		try{
-			// Open file that is the first command line parameter
-			FileInputStream fstream = new FileInputStream(s.getProbeFile());
-			DataInputStream in = new DataInputStream(fstream);
-			BufferedReader br = new BufferedReader(new InputStreamReader(in));
-			String strLine;
-			while ((strLine = br.readLine()) != null) {
-				probeKeys.add(Integer.parseInt(strLine));
-			}
-			in.close();
+		int successfulBuild = s.build(inputKeys, inputPayloads);
+		if (successfulBuild == 0){
+			System.out.println("Build was not successful.");
+			s.printSplashTable();
 		}
-		catch (Exception e){
-			System.err.println("Error: " + e.getMessage());
+		else{
+			System.out.println("Build was successful.");
+			s.printSplashTable();
 		}
 		
-		// then probe table
-		// write key and payload to dumpfile
-		for(int pKey: probeKeys){
-			int payload = 0;
-			if((payload = s.probe(pKey)) != 0){
-				s.writeResult(s.getResultFile(), pKey, payload);
+		//will put stuff for probe here
+		
+		//if dumpFile present, output to dumpfile
+		if (!dumpFile.equals("")){
+			//call dump to get results of dumpfile, then print them out to dumpfile
+			ArrayList<String> dumpResults = s.dump();
+			
+			try{
+				File file = new File(dumpFile);
+				if (!file.exists()){
+					file.createNewFile();
+				}
+				FileWriter fw = new FileWriter(file);
+				BufferedWriter bw = new BufferedWriter(fw);
+				for (int i = 0; i < dumpResults.size(); i++){
+					bw.write(dumpResults.get(i));
+					if (i < dumpResults.size()-1){
+						bw.newLine();
+					}
+				}
+				bw.close();
+				
+			}
+			catch (Exception e){
+				System.out.println("Could not write dumpfile: " + e.getMessage());
 			}
 		}
 	}
 	
-	/*
-	 * Create hash multipliers -- odd numbers in the range [0, 2^32)
+	/**
+	 * Create hash multipliers - odd numbers in the range [0, 2^32]
+	 * @param numMultipliers - the number of hash multipliers to generate
 	 */
 	private void setHashMultipliers(int numMultipliers){
 		 
@@ -126,30 +134,19 @@ public class SplashTable{
 			}			
 			uniqueRandom = false;
 		}
+		
+		//print hash multipliers (for debugging)
+		System.out.print("Hash Multipliers: ");
+		for (int i = 0; i < hashMultipliers.length; i++){
+			System.out.print("h[" + i + "]: " + hashMultipliers[i] + " ");
+		}
 	}
 	
-//	private int build(int[] keys, int[] payloads){
-//		
-//		for (int i = 0; i < keys.length; i++)
-//		{
-//			//TODO: check to make sure value doesn't already exist in bucket
-//						
-//			int[] possibleBuckets = generatePossibleBuckets(keys[i]);
-//			int successfulInsert = insert(keys[i],payloads[i], possibleBuckets,0,-1);
-//			if (successfulInsert == 0)
-//			{
-//				//TODO: deal with failed build
-//				return 0;
-//			}			
-//		}
-//		
-//		//if cannot be built, return 0
-//		return 1;
-//	}
-	
-	/*
-	 * Needed to rewrite a little because I won't know size to have arrays
-	 * need arraylist
+	/**
+	 * Build the splash table
+	 * @param keys - keys to enter into the splash table
+	 * @param payloads - payloads to enter into the splash table
+	 * @return 1 for successful build; 0 for failed build
 	 */
 	private int build(ArrayList<Integer> keys, ArrayList<Integer> payloads){
 		
@@ -158,8 +155,7 @@ public class SplashTable{
 			//TODO: check to make sure value doesn't already exist in bucket
 						
 			int[] possibleBuckets = generatePossibleBuckets(keys.get(i));
-			System.out.println("In here" + possibleBuckets.toString());
-			int successfulInsert = insert(keys.get(i), payloads.get(i), possibleBuckets,0,-1);
+			int successfulInsert = insert(keys.get(i),payloads.get(i), possibleBuckets,0,-1);
 			if (successfulInsert == 0)
 			{
 				//TODO: deal with failed build
@@ -171,14 +167,21 @@ public class SplashTable{
 		return 1;
 	}
 	
-	/*
-	 * Attempt to insert the parameters key and val into the splash table. 
-	 * Return 1 for successful insertion; return 0 if unsuccessful (i.e. exceeded maximum number of reinsertions)
+	/**
+	 * Attempt to insert a key-value pair into the splash table
+	 * @param key - the key to insert
+	 * @param val - the value/payload to insert
+	 * @param possibleBuckets - the buckets to which key may hash
+	 * @param attemptedReinsertions - number of reinsertions that have been attempted thus far
+	 * @param oldBucketIndex - the previous bucket that this value was in (set to -1 if inserting this pair for the first time)
+	 * @return 1 for successful insertion; 0 otherwise
 	 */
 	private int insert(int key, int val, int[] possibleBuckets, int attemptedReinsertions, int oldBucketIndex){
 		
-		if(attemptedReinsertions > maxReinsertions)
-			return 0;
+		if(attemptedReinsertions > maxReinsertions){
+			System.out.println("was unable to insert key " + key + " and value " + val + ": exceeded maximum reinsertions (" + attemptedReinsertions + ")");
+			return 0;	
+		}
 		
 		// attempt to insert key and val into bucket that is not full
 		for (int i = 0; i < possibleBuckets.length; i++)
@@ -190,6 +193,7 @@ public class SplashTable{
 				assert bucketKeys.get(possibleBuckets[i]).size() == bucketPayloads.get(possibleBuckets[i]).size();
 				assert bucketKeys.get(possibleBuckets[i]).size() <= bucketSize;
 				System.out.println("Added key " + key + " to bucket " + possibleBuckets[i] + ", number of attempts: " + attemptedReinsertions);
+				N++;
 				return 1;
 			}
 		}
@@ -199,22 +203,25 @@ public class SplashTable{
 		int randomBucket = possibleBuckets[randomBucketIndex];
 		int newKey = bucketKeys.get(randomBucket).remove(0);
 		int newVal = bucketPayloads.get(randomBucket).remove(0);
+		N--;
 		assert (bucketKeys.get(randomBucket).size() == bucketPayloads.get(randomBucket).size());
 		assert(bucketKeys.get(randomBucket).size() > 0);
 		bucketKeys.get(randomBucket).add(key);
 		bucketPayloads.get(randomBucket).add(val);
+		N++;
 		//System.out.println("Removed key " + newKey + " and value " + newVal + " from bucket " + randomBucket + " to put in key " + key);
 		int[] newPossibleBuckets = generatePossibleBuckets(newKey);
 		return insert(newKey, newVal, newPossibleBuckets,attemptedReinsertions+1,randomBucket);
 		
 	}
 	
-	/*
-	 * Generate the possible buckets for a key based on the hash multipliers
+	/**
+	 * Generate the possible buckets for the given key based on the hash multipliers
+	 * @param key - the key for which to obtain the possible buckets
+	 * @return a list of possible buckets for that key
 	 */
 	private int[] generatePossibleBuckets(int key)
 	{
-		
 		int[] possibleBuckets = new int[hashMultipliers.length];
 		
 		for (int j = 0; j < hashMultipliers.length; j++)
@@ -225,12 +232,16 @@ public class SplashTable{
 			String hkStr = Long.toBinaryString(hk);
 			int num = (int)(Math.log(numBuckets)/Math.log(2));
 			int possibleBucket = (int)(hk >> (hkStr.length()-(num-(32-hkStr.length()))));
-		
-			//System.out.println("Possible bucket for key " + key + " and multiplier " + hashMultipliers[j] + 
-			//		" (in long form: " + h + "): " + possibleBucket);
 			possibleBuckets[j] = possibleBucket;
 		}
-		System.out.println("COOL" + possibleBuckets[0]);
+		
+		/*output for debugging
+		System.out.print("Possible buckets for key " + key + ":");
+		for (int i = 0; i < possibleBuckets.length; i++){
+			System.out.print(" h = " + hashMultipliers[i] + ", bucket = " + possibleBuckets[i] + ";");
+		}
+		System.out.println();*/
+		
 		return possibleBuckets;
 	}
 	/*
@@ -274,6 +285,55 @@ public class SplashTable{
 		
 	}
 	
+	/**
+	 * Generate a list of all lines in the dump file.
+	 * These will be printed to the dumpfile in the main method.
+	 * @return a list of a lines to be output to the dump file.
+	 */
+	private ArrayList<String> dump(){
+		ArrayList<String> dumplines = new ArrayList<String>();
+		
+		//first line: B S h N
+		int S = (int)(Math.log(tableSize)/Math.log(2));
+		String firstLine = Integer.toString(bucketSize) + " " + Integer.toString(S) + " " +
+			Integer.toString(numMultipliers) + " " + Integer.toString(N);
+		dumplines.add(firstLine);
+		
+		//add hash multipliers
+		String secondLine = "";
+		for (int i = 0; i < hashMultipliers.length; i++){
+			secondLine += hashMultipliers[i] + " ";
+		}
+		dumplines.add(secondLine);
+		
+		//add key-value pairs in each bucket
+		for (int i = 0; i < bucketKeys.size(); i++){
+			for (int j = 0; j < bucketKeys.get(i).size(); j++){
+				String s = bucketKeys.get(i).get(j) + " " + bucketPayloads.get(i).get(j);
+				dumplines.add(s);
+			}
+		}
+		
+		return dumplines;
+	}
+	
+	/**
+	 * Print the entire splash table
+	 */
+	private void printSplashTable(){
+		System.out.println("N = " + N);
+		System.out.println("Bucket\tSlots");
+		for (int i = 0; i < bucketKeys.size(); i++){
+			ArrayList<Integer> currentBucketKeys = bucketKeys.get(i);
+			ArrayList<Integer> currentBucketPayloads = bucketPayloads.get(i);
+			System.out.print(i + ":\t");
+			for (int j = 0; j < currentBucketKeys.size(); j++){
+				System.out.print("(" + currentBucketKeys.get(j) + ", " + currentBucketPayloads.get(j) + ")\t");
+			}
+			System.out.println("");
+		}
+	}
+	
 	// remaining get and set methods follow
 		
 	private void setBucketSize(int bucketSize){
@@ -295,6 +355,12 @@ public class SplashTable{
 	private void setNumBuckets(){
 		assert(tableSize % bucketSize == 0);
 		this.numBuckets = (int)(tableSize/bucketSize);
+		
+		//initialize that many buckets in bucketKeys and bucketPayloads
+		for (int i = 0; i < numBuckets; i++){
+			this.bucketKeys.add(new ArrayList<Integer>());
+			this.bucketPayloads.add(new ArrayList<Integer>());
+		}
 	}
 	
 	private void setNumMultipliers(int numMultipliers){
@@ -309,6 +375,8 @@ public class SplashTable{
 		this.maxReinsertions = maxReinsertions;
 	}
 	
+	private void setN(int N){
+		this.N = N;
 	private void setInputFile(String inputFile){
 		this.inputFile = inputFile;
 	}
