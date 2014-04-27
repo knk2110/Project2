@@ -38,6 +38,7 @@ public class SplashTable{
 		s.bucketKeys = new ArrayList<ArrayList<Integer>>();
 		s.bucketPayloads = new ArrayList<ArrayList<Integer>>();
 		s.setNumBuckets();
+		s.setN(0);
 		if(args.length == 7){
 			s.setProbeFile(args[5]);
 			s.setResultFile(args[6]);
@@ -76,40 +77,38 @@ public class SplashTable{
 		if (successfulBuild == 0){
 			System.out.println("Build was not successful.");
 			s.printSplashTable();
+			
+			//don't probe if build was unsuccessful
 		}
 		else{
 			System.out.println("Build was successful.");
 			s.printSplashTable();
+			
+			//now probe
+			ArrayList<Integer> probeKeys = new ArrayList<Integer>();
+			try{
+				// Open file that is the first command line parameter
+				FileInputStream fstream = new FileInputStream(s.getProbeFile());
+				DataInputStream in = new DataInputStream(fstream);
+				BufferedReader br = new BufferedReader(new InputStreamReader(in));
+				String strLine;
+				while ((strLine = br.readLine()) != null) {
+					probeKeys.add(Integer.parseInt(strLine));
+				}
+				in.close();
+			}
+			catch (Exception e){
+				System.err.println("Error: " + e.getMessage());
+			}
+			s.clearFile(s.getResultFile());
+			for(int pKey: probeKeys){
+				int payload = 0;
+				if((payload = s.probe(pKey)) != 0){
+					s.writeResult(s.getResultFile(), pKey, payload);
+				}
+			}
 		}
-		
-		//will put stuff for probe here
-		// Once table has successfully been built
-				// set up array of all probes 
-		ArrayList<Integer> probeKeys = new ArrayList<Integer>();
-				try{
-					// Open file that is the first command line parameter
-					FileInputStream fstream = new FileInputStream(s.getProbeFile());
-					DataInputStream in = new DataInputStream(fstream);
-					BufferedReader br = new BufferedReader(new InputStreamReader(in));
-					String strLine;
-					while ((strLine = br.readLine()) != null) {
-						probeKeys.add(Integer.parseInt(strLine));
-					}
-					in.close();
-				}
-				catch (Exception e){
-					System.err.println("Error: " + e.getMessage());
-				}
-				// then probe table
-				// clear file
-				s.clearFile(s.getResultFile());
-				// write key and payload to dumpfile
-				for(int pKey: probeKeys){
-					int payload = 0;
-					if((payload = s.probe(pKey)) != 0){
-						s.writeResult(s.getResultFile(), pKey, payload);
-					}
-				}
+				
 
 		//if dumpFile present, output to dumpfile
 		if (!s.getDumpFile().equals("")){
@@ -186,12 +185,22 @@ public class SplashTable{
 			int successfulInsert = insert(keys.get(i),payloads.get(i), possibleBuckets,0,-1);
 			if (successfulInsert == 0)
 			{
-				//TODO: deal with failed build
+				//return 0 for failed insert -> this means a failed build
 				return 0;
 			}			
 		}
 		
-		//if cannot be built, return 0
+		//add in "0s" for key/payload for all unused slots
+		for (int i = 0; i < numBuckets; i++){
+			if (bucketKeys.get(i).size() < (tableSize/numBuckets)){
+				for (int j = bucketKeys.get(i).size(); j < tableSize/numBuckets; j++){
+					bucketKeys.get(i).add(0);
+					bucketPayloads.get(i).add(0);
+				}
+			}
+		}
+		
+		//if can be built, return 1
 		return 1;
 	}
 	
