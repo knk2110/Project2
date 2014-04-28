@@ -53,6 +53,7 @@ int main(int argc, char *argv[]){
 				fprintf(stderr, "Malloc failed.\n");
 				exit(1);
 			}
+
 			int i = 0; 
 			for (i = 0; i < numRows; i++){
 				bucketKeys[i] = malloc(numCols * sizeof(int));
@@ -61,15 +62,8 @@ int main(int argc, char *argv[]){
 					fprintf(stderr, "Malloc failed.\n");
 					exit(1);
 				}
+
 			}
-/*			int i1 = 0;
-			int j = 0;
-			for (i1 = 0; i1 < numRows; i1++){
-				for (j = 0; j < numCols; j++){
-					bucketKeys[i1][j] = 0;
-				}
-			}
-*/
 			numVals++;
 		}
 		else if (numVals == 2){
@@ -131,7 +125,7 @@ int main(int argc, char *argv[]){
 	for (i = 0; i < numRows; i++){
 		int j = 0;
 		for (j = 0; j < numCols; j++){
-			printf("Bucket %d, Slot %d: (%d, %d)\n", i, j, bucketKeys[i][j], bucketPayloads[i][j]);
+//			printf("Bucket %d, Slot %d: (%d, %d)\n", i, j, bucketKeys[i][j], bucketPayloads[i][j]);
 			}
 	}
 
@@ -147,8 +141,13 @@ int main(int argc, char *argv[]){
 	fclose(probeFile);
 
 	//before program ends, free bucketKeys and bucketPayloads
+	for (i = 0; i < numRows; i++){
+		free(bucketKeys[i]);
+		free(bucketPayloads[i]);
+	}
 	free(bucketKeys);
 	free(bucketPayloads);
+	free(probeKeys);
 
 	return 0;
 }
