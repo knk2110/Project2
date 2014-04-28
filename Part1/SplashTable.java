@@ -1,6 +1,5 @@
 import java.io.*;
 import java.util.ArrayList;
-import java.util.StringTokenizer;
 
 public class SplashTable{
 
@@ -185,20 +184,12 @@ public class SplashTable{
 			int successfulInsert = insert(keys.get(i),payloads.get(i), possibleBuckets,0,-1);
 			if (successfulInsert == 0)
 			{
-				//return 0 for failed insert -> this means a failed build
+				addZeros();
 				return 0;
 			}			
 		}
 		
-		//add in "0s" for key/payload for all unused slots
-		for (int i = 0; i < numBuckets; i++){
-			if (bucketKeys.get(i).size() < (tableSize/numBuckets)){
-				for (int j = bucketKeys.get(i).size(); j < tableSize/numBuckets; j++){
-					bucketKeys.get(i).add(0);
-					bucketPayloads.get(i).add(0);
-				}
-			}
-		}
+		addZeros();
 		
 		//if can be built, return 1
 		return 1;
@@ -250,6 +241,20 @@ public class SplashTable{
 		int[] newPossibleBuckets = generatePossibleBuckets(newKey);
 		return insert(newKey, newVal, newPossibleBuckets,attemptedReinsertions+1,randomBucket);
 		
+	}
+	
+	/**
+	 * Add in zeros for keys/payloads in unused slots.
+	 */
+	public void addZeros(){
+		for (int i = 0; i < numBuckets; i++){
+			if (bucketKeys.get(i).size() < (tableSize/numBuckets)){
+				for (int j = bucketKeys.get(i).size(); j < tableSize/numBuckets; j++){
+					bucketKeys.get(i).add(0);
+					bucketPayloads.get(i).add(0);
+				}
+			}
+		}
 	}
 	
 	/**
