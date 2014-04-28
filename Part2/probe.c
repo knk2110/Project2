@@ -140,6 +140,11 @@ int main(int argc, char *argv[]){
 	fclose(dumpFile);
 	fclose(probeFile);
 
+	for (i = 0; i < numVals; i++){
+//		int result = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[i]);
+		//printf("Payload for key %d: %d", probeKeys[i], result);
+	}
+	
 	//before program ends, free bucketKeys and bucketPayloads
 	for (i = 0; i < numRows; i++){
 		free(bucketKeys[i]);
@@ -151,6 +156,65 @@ int main(int argc, char *argv[]){
 
 	return 0;
 }
+
+
+int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey){
+
+	//make 4 copies of search key into copiesOfSearchKey	
+	const float sK = searchKey;
+	__m128 copiesOfSearchKey = _mm_load1_ps(&sK);
+
+	//make vector containing hash multipliers	
+	float hMs[4] = {hashMults[0], 0, hashMults[1], 0};
+	/*hMs[0] = (float)hashMults[0];
+	hMs[1] = (float)0;
+	hMs[2] = (float)hashMults[1];
+	hMs[3] = (float)0;*/
+	__m128 hMults = _mm_load_ps(&hMs[0]);
+
+	//multiply hash multipliers times copise of search key
+	__m128 hashValues = _mm_mul_ps(copiesOfSearchKey, hMults);
+
+	//to get slots, multiply hash values by table size
+	float tableSizes[4] = {tableSize, 0, tableSize, 0};
+	__m128 tS = _mm_load_ps(&tableSizes[0]);
+	__m128 slots = _mm_mul_ps(hashValues, tS);
+
+	//first slot is in slots[0]; second slot is in slots[2]
+	int slot1 = (int)slots[0];
+	int slot2 = (int)slots[2];
+
+	//for each slot, create mask between copiesOfSearchKey and the keys for that slot
+	float slot1Keys[4] = {bucketKeys[slot1][0], bucketKeys[slot1][1], bucketKeys[slot1][2], bucketKeys[slot1][3]};
+	__m128 s1Keys = _mm_load_ps(&slot1Keys[0]);
+	__m128 s1Mask = _mm_cmpeq_ps(copiesOfSearchKey, s1Keys);
+	float slot2Keys[4] = {bucketKeys[slot2][0], bucketKeys[slot2][0], bucketKeys[slot2][2], bucketKeys[slot2][3]};
+	__m128 s2Keys = _mm_load_ps(&slot2Keys[0]);
+	__m128 s2Mask = _mm_cmpeq_ps(copiesOfSearchKey, s2Keys);
+	
+	//now, perform AND with masks and payloads
+	float slot1Payloads[4] = {bucketPayloads[slot1][0], bucketPayloads[slot1][1], bucketPayloads[slot1][2], bucketPayloads[slot2][3]};
+	__m128 s1Payloads = _mm_load_ps(&slot1Payloads[0]);
+	__m128 s1AND = _mm_and_ps(s1Payloads, s1Mask);
+	float slot2Payloads[4] = {bucketPayloads[slot2][0], bucketPayloads[slot2][1], bucketPayloads[slot2][2], bucketPayloads[slot2][3]};
+	__m128 s2Payloads = _mm_load_ps(&slot2Payloads[0]);
+	__m128 s2AND = _mm_and_ps(s2Payloads, s2Mask);
+
+	//perform OR of the two ANDs
+	
+	__m128 slotsOR = _mm_or_ps(s1AND, s2AND);
+	int j = 0;
+	for (j = 0; j < 4; j++){
+		printf("slotsOR[%d]: %f", j, slotsOR[j]);
+	}
+
+	//perform OR-ACROSS
+	
+	//if not foumd, return 0
+	return 0;
+	
+}
+
 
 int power(int base, int exp){
 	int i = 0;
