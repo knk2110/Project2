@@ -24,6 +24,9 @@ int main(int argc, char *argv[]){
 	int h = 0;
 	int N = 0;
 	int n = 0;
+	int numRows = 0;
+	int numCols = 0;
+//	int numProbeVals = 0;
 	int tableSize = 0; 
 	int hashMults[2];
 	int **bucketKeys;
@@ -41,8 +44,8 @@ int main(int argc, char *argv[]){
 			S = n;
 			tableSize = power(2,S);
 //			printf("tablesize: %d", tableSize);
-			int numRows = tableSize/B;
-			int numCols = B;
+			numRows = tableSize/B;
+			numCols = B;
 //			printf("numrows: %d, numcols: %d", numRows, numCols);
 			bucketKeys = malloc(numRows * sizeof(int *));
 			bucketPayloads = malloc(numRows * sizeof(int *));
@@ -100,7 +103,7 @@ int main(int argc, char *argv[]){
 		}	
 	}
 
-	printf("B = %d, S = %d, h = %d, N = %d, h[0] = %d, h[1] = %d", B, S, h, N, hashMults[0], hashMults[1]); 
+	printf("B = %d, S = %d, h = %d, N = %d, h[0] = %d, h[1] = %d\n", B, S, h, N, hashMults[0], hashMults[1]); 
 
 	//now, read in list of probe values
 	FILE *probeFile = fopen(argv[2], "r");
@@ -110,7 +113,34 @@ int main(int argc, char *argv[]){
 	}
 
 	n = 0;
+	numVals = 0;
+	while (fscanf(probeFile, "%d", &n) > 0){
+		numVals++;
+	}
+	int *probeKeys = malloc(numVals*sizeof(int));
+	n = 0;
+	rewind(probeFile);
+	int i = 0;
+	while (fscanf(probeFile, "%d", &n) > 0){
+		//printf("n = %d\n", n);
+		probeKeys[i] = n;
+		i++;
+	}
 
+	//print new table
+	for (i = 0; i < numRows; i++){
+		int j = 0;
+		for (j = 0; j < numCols; j++){
+			printf("Bucket %d, Slot %d: (%d, %d)\n", i, j, bucketKeys[i][j], bucketPayloads[i][j]);
+			}
+	}
+
+	//print list of proble values
+	for (i = 0; i < numVals; i++){
+		printf("%d ", probeKeys[i]);
+	}
+
+	printf("\n");
 
 	//close files
 	fclose(dumpFile);
@@ -129,6 +159,6 @@ int power(int base, int exp){
 	for (i = 0; i < exp; i++){
 		result *= base;
 	}
-	printf("power = %d\n", result);
+	//printf("power = %d\n", result);
 	return result;
 }
