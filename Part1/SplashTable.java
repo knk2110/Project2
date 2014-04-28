@@ -178,8 +178,11 @@ public class SplashTable{
 		
 		for (int i = 0; i < keys.size(); i++)
 		{
-			//TODO: check to make sure value doesn't already exist in bucket
-						
+			//check to make sure value doesn't already exist in bucket
+			if (isAlreadyInTable(keys.get(i))==1){
+				//System.out.println("skipping (" + keys.get(i) + ", " + payloads.get(i) + "), duplicate key");
+				continue;
+			}
 			int[] possibleBuckets = generatePossibleBuckets(keys.get(i));
 			int successfulInsert = insert(keys.get(i),payloads.get(i), possibleBuckets,0,-1);
 			if (successfulInsert == 0)
@@ -258,6 +261,24 @@ public class SplashTable{
 	}
 	
 	/**
+	 * Checks to see if a key is already in the table
+	 * @param key - the key to check for
+	 * @return 1 if the key is already in the table, 0 otherwise
+	 */
+	public int isAlreadyInTable(int key){
+		for (int i = 0; i < bucketKeys.size(); i++){
+			for (int j = 0; j < bucketKeys.get(i).size(); j++){
+				if (bucketKeys.get(i).get(j) == key)
+				{
+					return 1;
+				}
+			}
+		}
+		
+		return 0;
+	}
+	
+	/**
 	 * Generate the possible buckets for the given key based on the hash multipliers
 	 * @param key - the key for which to obtain the possible buckets
 	 * @return a list of possible buckets for that key
@@ -316,12 +337,6 @@ public class SplashTable{
 //		}
 //		return payload;
 //	}
-	
-	private void dump(String outputFile, int key, int payLoad){
-		//Write state of table
-		
-	}
-	
 	private void clearFile(String outputFile){
 		File resultFile = new File(outputFile); 
 		resultFile.delete(); 
@@ -376,7 +391,6 @@ public class SplashTable{
 				dumplines.add(s);
 			}
 		}
-		
 		return dumplines;
 	}
 	
