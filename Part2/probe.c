@@ -166,13 +166,9 @@ int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize
 
 	//make vector containing hash multipliers	
 	float hMs[4] = {hashMults[0], 0, hashMults[1], 0};
-	/*hMs[0] = (float)hashMults[0];
-	hMs[1] = (float)0;
-	hMs[2] = (float)hashMults[1];
-	hMs[3] = (float)0;*/
 	__m128 hMults = _mm_load_ps(&hMs[0]);
 
-	//multiply hash multipliers times copise of search key
+	//multiply hash multipliers times copies of search key
 	__m128 hashValues = _mm_mul_ps(copiesOfSearchKey, hMults);
 
 	//to get slots, multiply hash values by table size
@@ -180,9 +176,9 @@ int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize
 	__m128 tS = _mm_load_ps(&tableSizes[0]);
 	__m128 slots = _mm_mul_ps(hashValues, tS);
 
-	//first slot is in slots[0]; second slot is in slots[2]
-	int slot1 = (int)slots[0];
-	int slot2 = (int)slots[2];
+	//HERE IS THE PROBLEM: slots should contain possible buckets, but instead it contains huge numbers.
+
+	/*
 
 	//for each slot, create mask between copiesOfSearchKey and the keys for that slot
 	float slot1Keys[4] = {bucketKeys[slot1][0], bucketKeys[slot1][1], bucketKeys[slot1][2], bucketKeys[slot1][3]};
@@ -209,7 +205,8 @@ int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize
 	}
 
 	//perform OR-ACROSS
-	
+
+	*/
 	//if not foumd, return 0
 	return 0;
 	
