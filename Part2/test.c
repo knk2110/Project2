@@ -9,13 +9,13 @@
 
 int main(){
 
-	float **keys;
+	int **keys;
 	int numRows = 4;
 	int numCols = 4;
-	keys = malloc(numRows * sizeof(float *));
+	keys = malloc(numRows * sizeof(int *));
 	int i = 0;
 	for (i = 0; i < numRows; i++){
-		keys[i] = malloc(numCols * sizeof(float));
+		keys[i] = malloc(numCols * sizeof(int));
 	}
 	int j = 0;
 	for (i = 0; i < numRows; i++){
