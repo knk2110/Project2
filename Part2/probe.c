@@ -135,11 +135,27 @@ int main(int argc, char *argv[]){
 	//call to probe goes here
 	for (j = 0; j < numVals; j++){
 		//call probe here
-		int possibleBucket1 = possibleBucket(hashMults[0], probeKeys[j], numRows);
-		int possibleBucket2 = possibleBucket(hashMults[1], probeKeys[j], numRows);
-		printf("possible buckets for key %d: for h[0]: %d, for h[1]: %d\n", probeKeys[i], possibleBucket1, possibleBucket2);
+		
 		//call probe here
+		int payLoad = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[j], B, S, numRows);
+		printf("payload %d\n", payLoad);
+		if(payLoad != 0){
+			FILE *f = fopen(argv[3], "w");
+			if (f == NULL)
+			{
+			    printf("Error opening file!\n");
+			    exit(1);
+			}
+
+			/* print key and payload to file */
+			fprintf(f, "%d %d\n", probeKeys[j], payLoad);
+
+			fclose(f);
+		}
 	}
+
+	// got two possible buckets, now going to perform logic - check to see if inside of buckets
+
 
 	//before program ends, free bucketKeys and bucketPayloads
 	for (i = 0; i < numRows; i++){
@@ -154,64 +170,64 @@ int main(int argc, char *argv[]){
 }
 
 
-int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey, int B1, int S1){
+int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey, int B1, int S1, int numRows){
+	int possibleBucket1 = possibleBucket(hashMults[0], searchKey, numRows);
+	int possibleBucket2 = possibleBucket(hashMults[1], searchKey, numRows);
+	printf("possible buckets for key %d: for h[0]: %d, for h[1]: %d\n", searchKey, possibleBucket1, possibleBucket2);
 
-	 __m128i s;//= _mm_setzero_si128();
+	// Got possible buckets now check each slot of buckets to see if matches key
+	int payload = 0;
+	int mask = (bucketKeys[possibleBucket1][0]==searchKey) ?  1 : 0;
+	payload |= mask * bucketPayloads[possibleBucket1][0];
+	mask = (bucketKeys[possibleBucket1][1]==searchKey) ?  1 : 0;
+	payload |= mask * bucketPayloads[possibleBucket1][1];
+	mask = (bucketKeys[possibleBucket1][2]==searchKey) ?  1 : 0;
+	payload |= mask * bucketPayloads[possibleBucket1][2];
+	mask = (bucketKeys[possibleBucket1][03]==searchKey) ?  1 : 0;
+	payload |= mask * bucketPayloads[possibleBucket1][3];
+
+	mask = (bucketKeys[possibleBucket2][0]==searchKey) ?  1 : 0;
+	payload |= mask * bucketPayloads[possibleBucket2][0];
+	mask = (bucketKeys[possibleBucket2][1]==searchKey) ?  1 : 0;
+	payload |= mask * bucketPayloads[possibleBucket2][1];
+	mask = (bucketKeys[possibleBucket2][2]==searchKey) ?  1 : 0;
+	payload |= mask * bucketPayloads[possibleBucket2][2];
+	mask = (bucketKeys[possibleBucket2][03]==searchKey) ?  1 : 0;
+	payload |= mask * bucketPayloads[possibleBucket2][3];
+
+
+	//   __m128i s;//= _mm_setzero_si128();
 	// printf("test with zeros: %lld %lld %lld %lld\n", s[0], s[1], s[2], s[3]);
-	//test = _mm_set_epi32(searchKey, searchKey, searchKey, searchKey);
+	// //test = _mm_set_epi32(searchKey, searchKey, searchKey, searchKey);
 	// s[0] = (int32_t)searchKey;
 	// s[1] = (int32_t)searchKey;
 	// s[2] = (int32_t)searchKey;
 	// s[3] = (int32_t)searchKey;
-
-
-	__m128i hms = _mm_setzero_si128();
-	long andOp = (long) pow(2, 32)-1;
-	long h = hashMults[0] & andOp;
-	h = hashMults[1] & andOp;
-	
-
-	long hk = h*((long)searchKey) % (long)pow(2,32);
-
+	// printf("test with search key: %lld %lld %lld %lld\n", s[0], s[1], s[2], s[3]);
+	// __m128i hms = _mm_setzero_si128();
+	// printf("hms with zeros: %lld %lld %lld %lld\n", hms[0], hms[1], hms[2], hms[3]);
 	// hms[0] = (int32_t)hashMults[0];
 	// hms[1] = (int32_t)0;
 	// hms[2] = (int32_t)hashMults[1];
 	// hms[3] = (int32_t)0;
+	// printf("hms with hash multipliers: %lld %lld %lld %lld\n", hms[0], hms[1], hms[2], hms[3]);
 
-
-	__m128i hvs = _mm_mullo_epi32(s, hms);
-
+	// __m128i hvs = _mm_mullo_epi32(s, hms);
+	// printf("hvs: %lld %lld %lld %lld\n", hvs[0], hvs[1], hvs[2], hvs[3]);
 
 	// hms[0] = (int32_t)hashMults[1];
-	__m128i hvs2 = _mm_mullo_epi32(s,hms);
-
-	//bit-shift to get table slot
-	int shift = (int)log2(power(2,S1)/B1);
-
+	// __m128i hvs2 = _mm_mullo_epi32(s,hms);
+	// printf("hvs2: %lld %lld %lld %lld\n", hvs2[0], hvs2[1], hvs2[2], hvs2[3]);
+	// //bit-shift to get table slot
+	// int shift = (int)log2(power(2,S1)/B1);
+	// printf("bitshift: %d\n", shift);
 	// unsigned int h1 = hvs[0];
-
+	// printf("h1: %d\n", h1);
 	// int shift1 = numDigitsInBinary(hvs[0])-(shift-(32-numDigitsInBinary(hvs[0]))); 		
 	// int slot1 = (int32_t)(hvs[0]) >> shift1;
 	// int slot2 = (int32_t)hvs2[0] >> (32-shift);//__m128i slot2 = _mm_srli_si128(hvs2, numBuckets);
-	//printf("slot2: %lld %lld %lld %lld\n", slot2[0], slot2[1], slot2[2], slot2[3]);
-
-
-	/*
-	__m128i h[4];
-	h[0] = _mm_cvtsi32_si128(searchKey); 
-	h[1] = _mm_cvtsi32_si128(searchKey); 
-	h[2] = _mm_cvtsi32_si128(searchKey); 
-	h[3] = _mm_cvtsi32_si128(searchKey); 
-	__m128i *p = &h[0];
-	const __m128i t = _mm_loadu_si128(p);
-	_mm_storeu_si128(p, t);
-
-	printf("t: %lld %lld %lld %lld\n", t[0], t[1], t[2], t[3]);	
-	
-	__m128i res = _mm_mullo_epi32(t,t);
-	printf("res: %lld %lld %lld %lld\n", res[0], res[1], res[2], res[3])*/
-	//for now, return 0
-	return 0;
+	// printf("slots: %d %d\n", slot1, slot2);
+	return payload;
 }
 
 
@@ -250,3 +266,4 @@ int possibleBucket(int hashValue, int key, int numBuckets){
 	//int pB = 0;	
 	return pB;
 }
+
