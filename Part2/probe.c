@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
 #include "probe.h"
 #include <xmmintrin.h>
 #include <emmintrin.h>
@@ -161,97 +162,56 @@ int main(int argc, char *argv[]){
 
 int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey, int B1, int S1){
 
-	//make four copies of search key
-	__m128i searchKeyI = _mm_cvtsi32_si128(searchKey);
-	// printf("I am in here %i", (int*) &copiesOfSearchKeyInt[0]);
-	// __m128i copiesOfSearchKeyInt = _mm_cvtps_epi32(searchKeyI); 
-	__m128i copiesOfSearchKeyInt = _mm_load_si128(&searchKeyI);
-	printf("Search key %i, right now!!!\n", searchKey);
-	printf("I am in here %i, right now!!\n", _mm_cvtsi128_si32(copiesOfSearchKeyInt));
+	 __m128i s;//= _mm_setzero_si128();
+	printf("test with zeros: %lld %lld %lld %lld\n", s[0], s[1], s[2], s[3]);
+	//test = _mm_set_epi32(searchKey, searchKey, searchKey, searchKey);
+	s[0] = (int32_t)searchKey;
+	s[1] = (int32_t)searchKey;
+	s[2] = (int32_t)searchKey;
+	s[3] = (int32_t)searchKey;
+	printf("test with search key: %lld %lld %lld %lld\n", s[0], s[1], s[2], s[3]);
+	__m128i hms = _mm_setzero_si128();
+	printf("hms with zeros: %lld %lld %lld %lld\n", hms[0], hms[1], hms[2], hms[3]);
+	hms[0] = (int32_t)hashMults[0];
+	hms[1] = (int32_t)0;
+	hms[2] = (int32_t)hashMults[1];
+	hms[3] = (int32_t)0;
+	printf("hms with hash multipliers: %lld %lld %lld %lld\n", hms[0], hms[1], hms[2], hms[3]);
 
-	// take hash multiplier array and convert to __128i
-	__m128i hMultsI;
-	hMultsI[0] = hashMults[0];
-	hMultsI[1] = 0;
-	hMultsI[2] = hashMults[1];//0;
-	hMultsI[3] = 0;// {1,0,1,0};
-	printf("hMultsI: %lld %lld %lld %lld\n", hMultsI[0], hMultsI[1], hMultsI[2], hMultsI[3]);
+	__m128i hvs = _mm_mullo_epi32(s, hms);
+	printf("hvs: %lld %lld %lld %lld\n", hvs[0], hvs[1], hvs[2], hvs[3]);
 
-	__m128i hMultsII;
-	hMultsII[0] = hashMults[1];
-	hMultsII[1] = 0;
-	hMultsII[2] = 0;
-	hMultsII[3] = 0;
-	printf("hMultsII: %lld %lld %lld %lld\n", hMultsII[0], hMultsII[1], hMultsII[2], hMultsII[3]);
+	hms[0] = (int32_t)hashMults[1];
+	__m128i hvs2 = _mm_mullo_epi32(s,hms);
+	printf("hvs2: %lld %lld %lld %lld\n", hvs2[0], hvs2[1], hvs2[2], hvs2[3]);
+	//bit-shift to get table slot
+	int shift = (int)log2(power(2,S1)/B1);
+	printf("bitshift: %d\n", shift);
+	unsigned int h1 = hvs[0];
+	printf("h1: %d\n", h1);
+	int shift1 = numDigitsInBinary(hvs[0])-(shift-(32-numDigitsInBinary(hvs[0]))); 		
+	int slot1 = (int32_t)(hvs[0]) >> shift1;
+	int slot2 = (int32_t)hvs2[0] >> (32-shift);//__m128i slot2 = _mm_srli_si128(hvs2, numBuckets);
+	printf("slots: %d %d\n", slot1, slot2);
+	//printf("slot2: %lld %lld %lld %lld\n", slot2[0], slot2[1], slot2[2], slot2[3]);
 
-	//multiply hash multipliers times copies of search key
-	__m128i lowerRes1 = _mm_mullo_epi32(copiesOfSearchKeyInt, hMultsI);
-	__m128i lowerRes2 = _mm_mullo_epi32(copiesOfSearchKeyInt, hMultsII);
-	//printf("results for lower1: %lld %lld %lld %lld\n", lowerRes1[0], lowerRes1[1], lowerRes1[2], lowerRes1[3]);
-	//printf("result for lower2:  %lld %lld %lld %lld\n", lowerRes2[0], lowerRes2[1], lowerRes2[2], lowerRes2[3]);
-	__m128i hVals;
-	hVals[0] = lowerRes1[0];
-	hVals[1] = 0;
-	hVals[2] = lowerRes2[0];
-	hVals[3] = 0;
-	printf("hVals: %lld %lld %lld %lld\n", hVals[0], hVals[1], hVals[2], hVals[3]);
-
-	__m128i hVals2;
-	hVals2[0] = lowerRes2[0];
-	hVals2[1] = 0;
-	hVals2[2] = 0;
-	hVals2[3] = 0;
-
-	//get slots
-	int numBuckets = power(2,S1)/B1;
-	int numBitsToShift = (int)log2(numBuckets);
-	printf("num bits to shift: %d\n", numBitsToShift);
-	__m128i slots = _mm_srli_si128(hVals, numBitsToShift);
-	//__m128i slots2 = _mm_srli_epi32(hVals2,numBitsToShift);
-	printf("after bit shift: %lld %lld %lld %lld\n", slots[0], slots[1], slots[2], slots[3]);
-	// __m128 tS = _mm_load_ps(&tableSizes[0]);
-	// __m128 slots = _mm_mul_ss(hashValues, tS);
-
-	// float result [4];
-	// _mm_store_ps (result, slots);
-	// printf("I am in here %f", result[3]);
-
-
-
-	//HERE IS THE PROBLEM: slots should contain possible buckets, but instead it contains huge numbers.
 
 	/*
+	__m128i h[4];
+	h[0] = _mm_cvtsi32_si128(searchKey); 
+	h[1] = _mm_cvtsi32_si128(searchKey); 
+	h[2] = _mm_cvtsi32_si128(searchKey); 
+	h[3] = _mm_cvtsi32_si128(searchKey); 
+	__m128i *p = &h[0];
+	const __m128i t = _mm_loadu_si128(p);
+	_mm_storeu_si128(p, t);
 
-	//for each slot, create mask between copiesOfSearchKey and the keys for that slot
-	float slot1Keys[4] = {bucketKeys[slot1][0], bucketKeys[slot1][1], bucketKeys[slot1][2], bucketKeys[slot1][3]};
-	__m128 s1Keys = _mm_load_ps(&slot1Keys[0]);
-	__m128 s1Mask = _mm_cmpeq_ps(copiesOfSearchKey, s1Keys);
-	float slot2Keys[4] = {bucketKeys[slot2][0], bucketKeys[slot2][0], bucketKeys[slot2][2], bucketKeys[slot2][3]};
-	__m128 s2Keys = _mm_load_ps(&slot2Keys[0]);
-	__m128 s2Mask = _mm_cmpeq_ps(copiesOfSearchKey, s2Keys);
+	printf("t: %lld %lld %lld %lld\n", t[0], t[1], t[2], t[3]);	
 	
-	//now, perform AND with masks and payloads
-	float slot1Payloads[4] = {bucketPayloads[slot1][0], bucketPayloads[slot1][1], bucketPayloads[slot1][2], bucketPayloads[slot2][3]};
-	__m128 s1Payloads = _mm_load_ps(&slot1Payloads[0]);
-	__m128 s1AND = _mm_and_ps(s1Payloads, s1Mask);
-	float slot2Payloads[4] = {bucketPayloads[slot2][0], bucketPayloads[slot2][1], bucketPayloads[slot2][2], bucketPayloads[slot2][3]};
-	__m128 s2Payloads = _mm_load_ps(&slot2Payloads[0]);
-	__m128 s2AND = _mm_and_ps(s2Payloads, s2Mask);
-
-	//perform OR of the two ANDs
-	
-	__m128 slotsOR = _mm_or_ps(s1AND, s2AND);
-	int j = 0;
-	for (j = 0; j < 4; j++){
-		printf("slotsOR[%d]: %f", j, slotsOR[j]);
-	}
-
-	//perform OR-ACROSS
-
-	*/
-	//if not foumd, return 0
+	__m128i res = _mm_mullo_epi32(t,t);
+	printf("res: %lld %lld %lld %lld\n", res[0], res[1], res[2], res[3])*/
+	//for now, return 0
 	return 0;
-	
 }
 
 
@@ -263,4 +223,15 @@ int power(int base, int exp){
 	}
 	//printf("power = %d\n", result);
 	return result;
+}
+
+int numDigitsInBinary(int num){
+	int digits = 0;
+	printf("num at start: %d", num);
+	for (digits = 0; num > 0; num >>=1){
+		printf("num: %d\n", num);
+		digits++;
+	}
+	printf("total digits: %d\n", digits);
+	return digits;
 }
