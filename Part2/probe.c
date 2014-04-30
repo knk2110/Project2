@@ -160,21 +160,45 @@ int main(int argc, char *argv[]){
 
 int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey){
 
-	//make 4 copies of search key into copiesOfSearchKey	
+	// make 4 copies of search key into copiesOfSearchKey	
 	const float sK = searchKey;
-	__m128 copiesOfSearchKey = _mm_load1_ps(&sK);
+	// __m128 copiesOfSearchKey = _mm_load1_ps(&sK);
+	// __m128i copiesOfSearchKeyInt = _mm_cvtps_epi32(copiesOfSearchKey);
 
-	//make vector containing hash multipliers	
+	// int result [4];
+	// _mm_store_ps (result, copiesOfSearchKeyInt);
+	__m128i searchKeyI = _mm_cvtsi32_si128(searchKey);
+	// printf("I am in here %i", (int*) &copiesOfSearchKeyInt[0]);
+	// __m128i copiesOfSearchKeyInt = _mm_cvtps_epi32(searchKeyI); 
+	__m128i copiesOfSearchKeyInt = _mm_load_si128(&searchKeyI);
+	printf("Search key %i, right now!!! ", searchKey);
+	printf("I am in here %i, right now!!! ", _mm_cvtsi128_si32(copiesOfSearchKeyInt));
+
+	// take hash multiplier array and convert to __128i
 	float hMs[4] = {hashMults[0], 0, hashMults[1], 0};
 	__m128 hMults = _mm_load_ps(&hMs[0]);
+	__m128i hMultsI = _mm_cvtps_epi32(hMults);
+
+	//make vector containing hash multipliers
+	// int32_t hMs[4] = {hashMults[0], 0, hashMults[1], 0};
+	// __m128i hMults = _mm_load_si128(&hMs[0]);	
+	// float hMs[4] = {hashMults[0], 0, hashMults[1], 0};
+	// __m128 hMults = _mm_load_ps(&hMs[0]);
+
 
 	//multiply hash multipliers times copies of search key
-	__m128 hashValues = _mm_mul_ps(copiesOfSearchKey, hMults);
+	// __m128 hashValues = _mm_mul_ps(copiesOfSearchKey, hMults);
 
 	//to get slots, multiply hash values by table size
-	float tableSizes[4] = {tableSize, 0, tableSize, 0};
-	__m128 tS = _mm_load_ps(&tableSizes[0]);
-	__m128 slots = _mm_mul_ps(hashValues, tS);
+	// float tableSizes[4] = {tableSize, 0, tableSize, 0};
+	// __m128 tS = _mm_load_ps(&tableSizes[0]);
+	// __m128 slots = _mm_mul_ss(hashValues, tS);
+
+	// float result [4];
+	// _mm_store_ps (result, slots);
+	// printf("I am in here %f", result[3]);
+
+
 
 	//HERE IS THE PROBLEM: slots should contain possible buckets, but instead it contains huge numbers.
 
