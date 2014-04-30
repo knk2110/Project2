@@ -2,4 +2,4 @@
 
 
 //define any methods here
-int power (int base, int exp);
+long power (int base, int exp);
