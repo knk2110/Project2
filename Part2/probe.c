@@ -10,6 +10,7 @@
 #include <tmmintrin.h>
 #include <smmintrin.h>
 #include <nmmintrin.h>
+#include <math.h>
 //#include <ammintrin.h>
 
 int main(int argc, char *argv[]){
@@ -164,36 +165,42 @@ int main(int argc, char *argv[]){
 int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey, int B1, int S1){
 
 	 __m128i s;//= _mm_setzero_si128();
-	printf("test with zeros: %lld %lld %lld %lld\n", s[0], s[1], s[2], s[3]);
+	// printf("test with zeros: %lld %lld %lld %lld\n", s[0], s[1], s[2], s[3]);
 	//test = _mm_set_epi32(searchKey, searchKey, searchKey, searchKey);
-	s[0] = (int32_t)searchKey;
-	s[1] = (int32_t)searchKey;
-	s[2] = (int32_t)searchKey;
-	s[3] = (int32_t)searchKey;
-	printf("test with search key: %lld %lld %lld %lld\n", s[0], s[1], s[2], s[3]);
+	// s[0] = (int32_t)searchKey;
+	// s[1] = (int32_t)searchKey;
+	// s[2] = (int32_t)searchKey;
+	// s[3] = (int32_t)searchKey;
+
+
 	__m128i hms = _mm_setzero_si128();
-	printf("hms with zeros: %lld %lld %lld %lld\n", hms[0], hms[1], hms[2], hms[3]);
-	hms[0] = (int32_t)hashMults[0];
-	hms[1] = (int32_t)0;
-	hms[2] = (int32_t)hashMults[1];
-	hms[3] = (int32_t)0;
-	printf("hms with hash multipliers: %lld %lld %lld %lld\n", hms[0], hms[1], hms[2], hms[3]);
+	long andOp = (long) pow(2, 32)-1;
+	long h = hashMults[0] & andOp;
+	h = hashMults[1] & andOp;
+	
+
+	long hk = h*((long)searchKey) % (long)pow(2,32);
+
+	// hms[0] = (int32_t)hashMults[0];
+	// hms[1] = (int32_t)0;
+	// hms[2] = (int32_t)hashMults[1];
+	// hms[3] = (int32_t)0;
+
 
 	__m128i hvs = _mm_mullo_epi32(s, hms);
-	printf("hvs: %lld %lld %lld %lld\n", hvs[0], hvs[1], hvs[2], hvs[3]);
 
-	hms[0] = (int32_t)hashMults[1];
+
+	// hms[0] = (int32_t)hashMults[1];
 	__m128i hvs2 = _mm_mullo_epi32(s,hms);
-	printf("hvs2: %lld %lld %lld %lld\n", hvs2[0], hvs2[1], hvs2[2], hvs2[3]);
+
 	//bit-shift to get table slot
 	int shift = (int)log2(power(2,S1)/B1);
-	printf("bitshift: %d\n", shift);
-	unsigned int h1 = hvs[0];
-	printf("h1: %d\n", h1);
-	int shift1 = numDigitsInBinary(hvs[0])-(shift-(32-numDigitsInBinary(hvs[0]))); 		
-	int slot1 = (int32_t)(hvs[0]) >> shift1;
-	int slot2 = (int32_t)hvs2[0] >> (32-shift);//__m128i slot2 = _mm_srli_si128(hvs2, numBuckets);
-	printf("slots: %d %d\n", slot1, slot2);
+
+	// unsigned int h1 = hvs[0];
+
+	// int shift1 = numDigitsInBinary(hvs[0])-(shift-(32-numDigitsInBinary(hvs[0]))); 		
+	// int slot1 = (int32_t)(hvs[0]) >> shift1;
+	// int slot2 = (int32_t)hvs2[0] >> (32-shift);//__m128i slot2 = _mm_srli_si128(hvs2, numBuckets);
 	//printf("slot2: %lld %lld %lld %lld\n", slot2[0], slot2[1], slot2[2], slot2[3]);
 
 
