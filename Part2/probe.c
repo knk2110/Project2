@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include "probe.h"
 #include <xmmintrin.h>
@@ -161,23 +162,31 @@ int main(int argc, char *argv[]){
 int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey){
 
 	// make 4 copies of search key into copiesOfSearchKey	
-	const float sK = searchKey;
+	// const float sK = searchKey;
 	// __m128 copiesOfSearchKey = _mm_load1_ps(&sK);
 	// __m128i copiesOfSearchKeyInt = _mm_cvtps_epi32(copiesOfSearchKey);
 
 	// int result [4];
 	// _mm_store_ps (result, copiesOfSearchKeyInt);
-	__m128i searchKeyI = _mm_cvtsi32_si128(searchKey);
+	// __m128i searchKeyI = _mm_cvtsi32_si128(searchKey);
+	// __m128i searchKeyI = _mm_load_si128(&searchKey[0]);
+	// __m128i searchKeyI = _mm_set_epi32 (searchKey, searchKey, searchKey, searchKey);
 	// printf("I am in here %i", (int*) &copiesOfSearchKeyInt[0]);
 	// __m128i copiesOfSearchKeyInt = _mm_cvtps_epi32(searchKeyI); 
-	__m128i copiesOfSearchKeyInt = _mm_load_si128(&searchKeyI);
-	printf("Search key %i, right now!!! ", searchKey);
-	printf("I am in here %i, right now!!! ", _mm_cvtsi128_si32(copiesOfSearchKeyInt));
+	// __m128i copiesOfSearchKeyInt = _mm_load_si128(&searchKeyI);
+	uint32_t *aPtr = &searchKey;
+	const __m128i a = _mm_storeu_si128((const __m128i*) aPtr, (const __m128i*) aPtr);
+
+	// printf("Search key %i, right now!!! ", searchKey);
+	// printf("I am in here %i, right now!!! ", _mm_cvtsi128_si32(copiesOfSearchKeyInt));
 
 	// take hash multiplier array and convert to __128i
-	float hMs[4] = {hashMults[0], 0, hashMults[1], 0};
-	__m128 hMults = _mm_load_ps(&hMs[0]);
-	__m128i hMultsI = _mm_cvtps_epi32(hMults);
+	// float hMs[4] = {hashMults[0], 0, hashMults[1], 0};
+	// __m128 hMults = _mm_load_ps(&hMs[0]);
+	// __m128i hMultsI = _mm_cvtps_epi32(hMults);
+	// printf("I am in here %i, right now!!! ", _mm_cvtsi128_si32(copiesOfSearchKeyInt));
+
+	//multiply by 2^S/B
 
 	//make vector containing hash multipliers
 	// int32_t hMs[4] = {hashMults[0], 0, hashMults[1], 0};
