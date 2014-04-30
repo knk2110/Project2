@@ -210,10 +210,25 @@ int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize
 	uint32_t *cs1 = (uint32_t*)&cmpSlot1;
 	printf("compslot1: %i %i %i %i\n", cs1[0], cs1[1], cs1[2], cs1[3]);
 	__m128i slot2keys = _mm_set_epi32(bucketKeys[slot2][3], bucketKeys[slot2][2], bucketKeys[slot2][1], bucketKeys[slot2][0]);
+	uint32_t *s2p = (uint32_t*)&slot2keys;
+	printf("slot 2 keys: %i %i %i %i\n", s2p[0], s2p[1], s2p[2], s2p[3]);
 	__m128i slot2payloads = _mm_set_epi32(bucketPayloads[slot2][3], bucketPayloads[slot2][2], bucketPayloads[slot2][1], bucketPayloads[slot2][0]);
+	uint32_t *s2pa = (uint32_t*)&slot2payloads;
+	printf("slot 2 payloads: %i %i %i %i\n", s2pa[0], s2pa[1], s2pa[2], s2pa[3]);
 	__m128i cmpSlot2 = _mm_cmpeq_epi32(slot2keys, sk);
 	uint32_t *cs2 = (uint32_t*)&cmpSlot2;
 	printf("compslot2: %i %i %i %i\n", cs2[0], cs2[1], cs2[2], cs2[3]);
+	__m128i andS1 = _mm_and_si128(cmpSlot1, slot1payloads);
+	__m128i andS2 = _mm_and_si128(cmpSlot2, slot2payloads);
+	uint32_t *as2 = (uint32_t*)&andS2;
+	printf("slot 2 and: %i %i %i %i\n", as2[0], as2[1], as2[2], as2[3]);
+	__m128i orAnds = _mm_or_si128(andS1, andS2);
+	uint32_t *oA = (uint32_t*)&orAnds;
+	printf("orAnds: %i %i %i %i\n", oA[0], oA[1], oA[2], oA[3]);
+	orAnds = _mm_max_epi32(orAnds, _mm_shuffle_epi32(orAnds, _MM_SHUFFLE(2,1,0,3)));
+	orAnds = _mm_max_epi32(orAnds, _mm_shuffle_epi32(orAnds, _MM_SHUFFLE(1,0,3,2)));
+	printf("orAnds end: %i %i %i %i\n", oA[0], oA[1], oA[2], oA[3]);
+	return oA[1];
 //	__m128 hvi = _mm_castsi128_ps(hv);
 //	uint32_t *hvip = (uint32_t*)&hvi;
 
@@ -266,7 +281,7 @@ int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize
 
 	*/
 	//if not foumd, return 0
-	return 0;
+	//return 0;
 	
 }
 
