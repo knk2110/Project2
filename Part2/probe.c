@@ -25,10 +25,9 @@ int main(int argc, char *argv[]){
 	int S = 0;
 	int h = 0;
 	int N = 0;
-	int n = 0;
+	long n = 0;
 	int numRows = 0;
 	int numCols = 0;
-//	int numProbeVals = 0;
 	int tableSize = 0; 
 	int hashMults[2];
 	int **bucketKeys;
@@ -36,14 +35,14 @@ int main(int argc, char *argv[]){
 	int bucketNumber = 0;
 	int slotNumber = 0;
 
-	while ( fscanf(dumpFile, "%d", &n) > 0){
+	while ( fscanf(dumpFile, "%lu", &n) > 0){
 
 		if (numVals == 0){
 			B = n;	
 			numVals++;
 		}
 		else if (numVals == 1){
-			S = n;
+			S = (int)n;
 			tableSize = power(2,S);
 //			printf("tablesize: %d", tableSize);
 			numRows = tableSize/B;
@@ -69,26 +68,23 @@ int main(int argc, char *argv[]){
 			numVals++;
 		}
 		else if (numVals == 2){
-			h = n;	//we know this should be 2
+			h = (int)n;	//we know this should be 2
 			numVals++;	
 		}
 		else if (numVals == 3){
-			N = n;
+			N = (int)n;
 			numVals++;
 		}
 		else if (numVals <= 5){
-			hashMults[numVals-4] = n;
+			hashMults[numVals-4] = (int)n;
 			numVals++;
 		}
 		else if (numVals > 5){ //key or value, insert into table
-			//printf("numVals > 5, n = %d\n", n);
 			if (numVals % 2 == 0) {//if even, this is a key
-//				printf("numVals is even (%d),%d is a key for bucket %d, slot %d\n", numVals, n, bucketNumber, slotNumber);
-				bucketKeys[bucketNumber][slotNumber] = n;			
+				bucketKeys[bucketNumber][slotNumber] = (int)n;			
 			}
 			else { //this is a payload
-//				printf("numVals is odd (%d), %d is a value for bucket %d, slot %d\n", numVals, n, bucketNumber, slotNumber);
-				bucketPayloads[bucketNumber][slotNumber] = n;
+				bucketPayloads[bucketNumber][slotNumber] = (int)n;
 				slotNumber = slotNumber + 1;
 				if (slotNumber == B){
 					slotNumber = 0;
@@ -110,43 +106,39 @@ int main(int argc, char *argv[]){
 
 	n = 0;
 	numVals = 0;
-	while (fscanf(probeFile, "%d", &n) > 0){
+	while (fscanf(probeFile, "%lu", &n) > 0){
 		numVals++;
 	}
 	int *probeKeys = malloc(numVals*sizeof(int));
 	n = 0;
 	rewind(probeFile);
 	int i = 0;
-	while (fscanf(probeFile, "%d", &n) > 0){
-		//printf("n = %d\n", n);
-		probeKeys[i] = n;
+	while (fscanf(probeFile, "%lu", &n) > 0){
+		probeKeys[i] = (int)n;
 		i++;
 	}
 
-	//print new table
-	for (i = 0; i < numRows; i++){
-		int j = 0;
-		for (j = 0; j < numCols; j++){
-//			printf("Bucket %d, Slot %d: (%d, %d)\n", i, j, bucketKeys[i][j], bucketPayloads[i][j]);
-			}
+	//print probe vals
+	int j = 0;
+	for (j = 0; j < numVals; j++){
+		printf("%d ", probeKeys[j]);
 	}
-
-	//print list of proble values
-	for (i = 0; i < numVals; i++){
-		printf("%d ", probeKeys[i]);
-	}
-
 	printf("\n");
+
 
 	//close files
 	fclose(dumpFile);
 	fclose(probeFile);
 
-	//for (i = 0; i < numVals; i++){
-		int result = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[0], B, S);
-		//printf("Payload for key %d: %d", probeKeys[i], result);
-	//}
-	
+	//call to probe goes here
+	for (j = 0; j < numVals; j++){
+		//call probe here
+		int possibleBucket1 = possibleBucket(hashMults[0], probeKeys[j], numRows);
+		int possibleBucket2 = possibleBucket(hashMults[1], probeKeys[j], numRows);
+		printf("possible buckets for key %d: for h[0]: %d, for h[1]: %d\n", probeKeys[i], possibleBucket1, possibleBucket2);
+		//call probe here
+	}
+
 	//before program ends, free bucketKeys and bucketPayloads
 	for (i = 0; i < numRows; i++){
 		free(bucketKeys[i]);
@@ -215,9 +207,9 @@ int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize
 }
 
 
-int power(int base, int exp){
+long power(int base, int exp){
 	int i = 0;
-	int result = 1;
+	long result = 1;
 	for (i = 0; i < exp; i++){
 		result *= base;
 	}
@@ -227,11 +219,26 @@ int power(int base, int exp){
 
 int numDigitsInBinary(int num){
 	int digits = 0;
-	printf("num at start: %d", num);
+//	printf("num at start: %d", num);
 	for (digits = 0; num > 0; num >>=1){
-		printf("num: %d\n", num);
+//		printf("num: %d\n", num);
 		digits++;
 	}
-	printf("total digits: %d\n", digits);
+//	printf("total digits: %d\n", digits);
 	return digits;
+}
+
+int possibleBucket(int hashValue, int key, int numBuckets){
+//	printf("in method...\n");
+	long andOp = (long)(power(2,32)-1);
+	long h = hashValue & andOp;
+//	printf("%lu\n", h);
+//	printf("key: %lu\n", (long)key);
+//	printf("pow: %lu\n", (long)(power(2,32)));
+	long hk = h*((long)key) %(long)power(2,32);
+	int num = (int)log2(numBuckets);
+	long numDigits = numDigitsInBinary(key);
+	int pB = (int)(hk >> (numDigits-(num-(32-numDigits))));
+	//int pB = 0;	
+	return pB;
 }
