@@ -139,7 +139,7 @@ int main(int argc, char *argv[]){
 		int payLoad = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[j], shiftNum);
 		if(payLoad != 0){
 			/* print key and payload to file */
-			fprintf(results, "%d\n", payLoad);
+			fprintf(results, "%d %d\n", probeKeys[j], payLoad);
 
 		}
 	}
