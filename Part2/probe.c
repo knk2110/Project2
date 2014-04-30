@@ -140,10 +140,10 @@ int main(int argc, char *argv[]){
 	fclose(dumpFile);
 	fclose(probeFile);
 
-	for (i = 0; i < numVals; i++){
-//		int result = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[i]);
+	//for (i = 0; i < numVals; i++){
+		int result = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[0]);
 		//printf("Payload for key %d: %d", probeKeys[i], result);
-	}
+	//}
 	
 	//before program ends, free bucketKeys and bucketPayloads
 	for (i = 0; i < numRows; i++){
@@ -160,24 +160,21 @@ int main(int argc, char *argv[]){
 
 int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey){
 
-	// make 4 copies of search key into copiesOfSearchKey	
-	const float sK = searchKey;
-	// __m128 copiesOfSearchKey = _mm_load1_ps(&sK);
-	// __m128i copiesOfSearchKeyInt = _mm_cvtps_epi32(copiesOfSearchKey);
-
-	// int result [4];
-	// _mm_store_ps (result, copiesOfSearchKeyInt);
+	//make four copies of search key
 	__m128i searchKeyI = _mm_cvtsi32_si128(searchKey);
 	// printf("I am in here %i", (int*) &copiesOfSearchKeyInt[0]);
 	// __m128i copiesOfSearchKeyInt = _mm_cvtps_epi32(searchKeyI); 
 	__m128i copiesOfSearchKeyInt = _mm_load_si128(&searchKeyI);
-	printf("Search key %i, right now!!! ", searchKey);
-	printf("I am in here %i, right now!!! ", _mm_cvtsi128_si32(copiesOfSearchKeyInt));
+	printf("Search key %i, right now!!!\n", searchKey);
+	printf("I am in here %i, right now!!\n", _mm_cvtsi128_si32(copiesOfSearchKeyInt));
 
 	// take hash multiplier array and convert to __128i
-	float hMs[4] = {hashMults[0], 0, hashMults[1], 0};
-	__m128 hMults = _mm_load_ps(&hMs[0]);
-	__m128i hMultsI = _mm_cvtps_epi32(hMults);
+	__m128i hMultsI;
+	hMultsI[0] = hashMults[0];
+	hMultsI[1] = 0;
+	hMultsI[2] = hashMults[1];
+	hMultsI[3] = 0;// {1,0,1,0};
+	printf("hMultsI: %lld %lld %lld %lld\n", hMultsI[0], hMultsI[1], hMultsI[2], hMultsI[3]);
 
 	//make vector containing hash multipliers
 	// int32_t hMs[4] = {hashMults[0], 0, hashMults[1], 0};
