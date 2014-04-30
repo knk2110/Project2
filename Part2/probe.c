@@ -133,6 +133,13 @@ int main(int argc, char *argv[]){
 	fclose(probeFile);
 
 	//call to probe goes here
+	FILE *results = fopen(argv[3], "w");
+	if(results == NULL)
+	{
+		printf("Error opening results file.\n");
+		exit(1);
+	}
+
 	for (j = 0; j < numVals; j++){
 		//call probe here
 		
@@ -140,19 +147,13 @@ int main(int argc, char *argv[]){
 		int payLoad = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[j], B, S, numRows);
 		printf("payload %d\n", payLoad);
 		if(payLoad != 0){
-			FILE *f = fopen(argv[3], "w");
-			if (f == NULL)
-			{
-			    printf("Error opening file!\n");
-			    exit(1);
-			}
-
 			/* print key and payload to file */
-			fprintf(f, "%d %d\n", probeKeys[j], payLoad);
+			fprintf(results, "%d\n", probeKeys[j]);
 
-			fclose(f);
 		}
 	}
+
+	fclose(results);
 
 	// got two possible buckets, now going to perform logic - check to see if inside of buckets
 
