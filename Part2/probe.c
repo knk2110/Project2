@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "probe.h"
 #include <xmmintrin.h>
 #include <emmintrin.h>
@@ -141,7 +142,7 @@ int main(int argc, char *argv[]){
 	fclose(probeFile);
 
 	//for (i = 0; i < numVals; i++){
-		int result = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[0]);
+		int result = probe(bucketKeys, bucketPayloads, hashMults, tableSize, probeKeys[0], B, S);
 		//printf("Payload for key %d: %d", probeKeys[i], result);
 	//}
 	
@@ -158,7 +159,7 @@ int main(int argc, char *argv[]){
 }
 
 
-int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey){
+int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize, int searchKey, int B1, int S1){
 
 	//make four copies of search key
 	__m128i searchKeyI = _mm_cvtsi32_si128(searchKey);
@@ -172,22 +173,42 @@ int probe(int **bucketKeys, int **bucketPayloads, int hashMults[], int tableSize
 	__m128i hMultsI;
 	hMultsI[0] = hashMults[0];
 	hMultsI[1] = 0;
-	hMultsI[2] = hashMults[1];
+	hMultsI[2] = hashMults[1];//0;
 	hMultsI[3] = 0;// {1,0,1,0};
 	printf("hMultsI: %lld %lld %lld %lld\n", hMultsI[0], hMultsI[1], hMultsI[2], hMultsI[3]);
 
-	//make vector containing hash multipliers
-	// int32_t hMs[4] = {hashMults[0], 0, hashMults[1], 0};
-	// __m128i hMults = _mm_load_si128(&hMs[0]);	
-	// float hMs[4] = {hashMults[0], 0, hashMults[1], 0};
-	// __m128 hMults = _mm_load_ps(&hMs[0]);
-
+	__m128i hMultsII;
+	hMultsII[0] = hashMults[1];
+	hMultsII[1] = 0;
+	hMultsII[2] = 0;
+	hMultsII[3] = 0;
+	printf("hMultsII: %lld %lld %lld %lld\n", hMultsII[0], hMultsII[1], hMultsII[2], hMultsII[3]);
 
 	//multiply hash multipliers times copies of search key
-	// __m128 hashValues = _mm_mul_ps(copiesOfSearchKey, hMults);
+	__m128i lowerRes1 = _mm_mullo_epi32(copiesOfSearchKeyInt, hMultsI);
+	__m128i lowerRes2 = _mm_mullo_epi32(copiesOfSearchKeyInt, hMultsII);
+	//printf("results for lower1: %lld %lld %lld %lld\n", lowerRes1[0], lowerRes1[1], lowerRes1[2], lowerRes1[3]);
+	//printf("result for lower2:  %lld %lld %lld %lld\n", lowerRes2[0], lowerRes2[1], lowerRes2[2], lowerRes2[3]);
+	__m128i hVals;
+	hVals[0] = lowerRes1[0];
+	hVals[1] = 0;
+	hVals[2] = lowerRes2[0];
+	hVals[3] = 0;
+	printf("hVals: %lld %lld %lld %lld\n", hVals[0], hVals[1], hVals[2], hVals[3]);
 
-	//to get slots, multiply hash values by table size
-	// float tableSizes[4] = {tableSize, 0, tableSize, 0};
+	__m128i hVals2;
+	hVals2[0] = lowerRes2[0];
+	hVals2[1] = 0;
+	hVals2[2] = 0;
+	hVals2[3] = 0;
+
+	//get slots
+	int numBuckets = power(2,S1)/B1;
+	int numBitsToShift = (int)log2(numBuckets);
+	printf("num bits to shift: %d\n", numBitsToShift);
+	__m128i slots = _mm_srli_si128(hVals, numBitsToShift);
+	//__m128i slots2 = _mm_srli_epi32(hVals2,numBitsToShift);
+	printf("after bit shift: %lld %lld %lld %lld\n", slots[0], slots[1], slots[2], slots[3]);
 	// __m128 tS = _mm_load_ps(&tableSizes[0]);
 	// __m128 slots = _mm_mul_ss(hashValues, tS);
 
